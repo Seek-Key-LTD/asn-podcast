@@ -28,14 +28,10 @@
 	},
 	"keep_vars": true,
 	"kv_namespaces": [
-	  {
-	    "binding": "HACKER_PODCAST_KV",
-	    "id": "6a50d6f93dcc467a8552f889cd238da1",
-	    "remote": true
-	  }
-	],
+		{
 			"binding": "HACKER_PODCAST_KV",
-			"id": "6a50d6f93dcc467a8552f889cd238da1"
+			"id": "6a50d6f93dcc467a8552f889cd238da1",
+			"remote": true
 		}
 	],
 	"r2_buckets": [
