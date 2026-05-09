@@ -2,34 +2,37 @@ import type { PodcastInfo } from '@/types/podcast'
 import { env } from 'cloudflare:workers'
 import { Podcast } from '@/components/podcast'
 import { StructuredData } from '@/components/structured-data'
-import { keepDays, podcast, site } from '@/config'
+import { podcast, site } from '@/config'
 import { buildEpisodesFromArticles } from '@/lib/episodes'
 import { getAbsoluteUrl } from '@/lib/seo'
-import { getPastDays } from '@/lib/utils'
 
 export const revalidate = 600
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{ page?: string, lang?: string }>
 }) {
   const runEnv = env.NODE_ENV || 'production'
   const query = await searchParams
+  const locale = query.lang || 'zh'
   const requestedPage = Number.parseInt(query.page ?? '1', 10)
   const currentPage = Number.isNaN(requestedPage) ? 1 : Math.max(1, requestedPage)
-  const pastDays = getPastDays(keepDays)
-  const kvPrefix = `content:${runEnv}:hacker-podcast:`
-  const totalEpisodes = pastDays.length
+
+  const indexKey = `index:${runEnv}:locale:${locale}`
+  const episodeDates = await env.HACKER_PODCAST_KV.get(indexKey, 'json') as string[] || []
+
+  const totalEpisodes = episodeDates.length
   const totalPages = Math.max(1, Math.ceil(totalEpisodes / site.pageSize))
   const safePage = Math.min(currentPage, totalPages)
   const startIndex = (safePage - 1) * site.pageSize
-  const pageDays = pastDays.slice(startIndex, startIndex + site.pageSize)
+  const pageDates = episodeDates.slice(startIndex, startIndex + site.pageSize)
 
+  const kvPrefix = `content:${runEnv}:locale:${locale}:date:`
   const posts = (
     await Promise.all(
-      pageDays.map(async (day) => {
-        const post = await env.HACKER_PODCAST_KV.get(`${kvPrefix}${day}`, 'json')
+      pageDates.map(async (date) => {
+        const post = await env.HACKER_PODCAST_KV.get(`${kvPrefix}${date}`, 'json')
         return post as unknown as Article
       }),
     )

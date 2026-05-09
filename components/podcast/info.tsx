@@ -12,7 +12,7 @@ import { Waveform } from '@/components/common/waveform'
 import { TinyWaveFormIcon } from '@/components/common/waveform-icon'
 import { SpotifyIcon } from '@/components/icons/spotify'
 import { XYZIcon } from '@/components/icons/xyz'
-import { podcast, site } from '@/config'
+import { credits, podcast, site } from '@/config'
 import { cn } from '@/lib/utils'
 
 interface PlatformConfig {
@@ -210,6 +210,14 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
                 </button>
               )}
             </div>
+            {credits.acknowledgement && (
+              <div className={`
+                mt-4 border-t pt-4 text-xs text-muted-foreground italic
+              `}
+              >
+                {credits.acknowledgement}
+              </div>
+            )}
           </div>
         </section>
 

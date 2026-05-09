@@ -5,23 +5,24 @@ import { Podcast } from 'podcast'
 import { podcast } from '@/config'
 import { buildAudioUrl } from '@/lib/episodes'
 import { getBaseUrl } from '@/lib/seo'
-import { getPastDays } from '@/lib/utils'
 
 const md = markdownit()
 
 export const revalidate = 3600
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const locale = searchParams.get('lang') || 'zh'
   const baseUrl = getBaseUrl()
 
   // 如果没有缓存，生成新的响应
   const feed = new Podcast({
-    title: podcast.base.title,
+    title: `${podcast.base.title}${locale !== 'zh' ? ` (${locale.toUpperCase()})` : ''}`,
     description: podcast.base.description,
-    feedUrl: `${baseUrl}/rss.xml`,
+    feedUrl: `${baseUrl}/rss.xml${locale !== 'zh' ? `?lang=${locale}` : ''}`,
     siteUrl: baseUrl,
     imageUrl: `${baseUrl}/logo.png`,
-    language: 'zh-CN',
+    language: locale === 'zh' ? 'zh-CN' : locale,
     pubDate: new Date(),
     ttl: 60,
     generator: podcast.base.title,
@@ -38,10 +39,13 @@ export async function GET() {
   })
 
   const runEnv = env.NODE_ENV || 'production'
-  const pastDays = getPastDays(10)
+  const indexKey = `index:${runEnv}:locale:${locale}`
+  const episodeDates = await env.HACKER_PODCAST_KV.get(indexKey, 'json') as string[] || []
+  const recentDates = episodeDates.slice(0, 10)
+
   const posts = (await Promise.all(
-    pastDays.map(async (day) => {
-      const post = await env.HACKER_PODCAST_KV.get(`content:${runEnv}:hacker-podcast:${day}`, 'json')
+    recentDates.map(async (date) => {
+      const post = await env.HACKER_PODCAST_KV.get(`content:${runEnv}:locale:${locale}:date:${date}`, 'json')
       return post as unknown as Article
     }),
   )).filter(Boolean)

@@ -1,9 +1,9 @@
 import type { Podcast, Site } from '@/types/podcast'
 
-const defaultTitle = 'Agili 的 Hacker Podcast'
+const defaultTitle = '牧人记 · 鲲鹏志'
 const defaultDescription
-  = '一个基于 AI 的 Hacker News 中文播客项目，每天自动抓取 Hacker News 热门文章，通过 AI 生成中文总结并转换为播客内容。'
-const defaultBaseUrl = import.meta.env?.NEXT_PUBLIC_BASE_URL ?? 'https://hacker-podcast.agi.li'
+  = '探索地质变迁、文明掠夺与地缘政治的深度叙事。由 AI 驱动的多维交互播客，呈现来自深空的证词。'
+const defaultBaseUrl = import.meta.env?.NEXT_PUBLIC_BASE_URL ?? 'https://podcast.git4ta.fun'
 
 export const keepDays = 30
 
@@ -16,15 +16,16 @@ export const podcast: Podcast = {
   },
   hosts: [
     {
-      name: 'Gemini',
-      link: 'https://gemini.google',
+      name: 'Hermes',
+      link: '#',
     },
     {
-      name: 'MiniMax',
-      link: 'https://www.minimaxi.com/audio',
+      name: 'Picoclaw',
+      link: '#',
     },
   ],
   platforms: [
+    /*
     {
       id: 'youtube',
       name: 'YouTube',
@@ -45,6 +46,7 @@ export const podcast: Podcast = {
       name: '小宇宙',
       link: 'https://www.xiaoyuzhoufm.com/podcast/67b06023606e5c59409cd9ba',
     },
+    */
     {
       id: 'rss',
       name: 'RSS',
@@ -54,7 +56,7 @@ export const podcast: Podcast = {
 }
 
 export const site: Site = {
-  themeColor: 'orange',
+  themeColor: 'blue',
   pageSize: 7,
   defaultDescriptionLength: 200,
   seo: {
@@ -69,8 +71,12 @@ export const site: Site = {
 }
 
 export const externalLinks = {
-  github: 'https://github.com/miantiao-me/hacker-podcast',
+  github: 'https://github.com/Seek-Key-LTD/asn-podcast',
   rss: '/rss.xml',
+}
+
+export const credits = {
+  acknowledgement: '感谢 Podify 提供播客主题设计灵感，感谢 mian-tiao 提供基础架构参考。',
 }
 
 export const podcastTitle = podcast.base.title
