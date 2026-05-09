@@ -5,6 +5,7 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "hacker-podcast-worker",
+  "account_id": "e167cb36a5b95cb3cc8daf77a3f7d0b3",
   "main": "./index.ts",
   "minify": true,
   "upload_source_maps": true,
