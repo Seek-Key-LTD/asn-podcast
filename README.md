@@ -1,6 +1,6 @@
-# 牧人记 · 鲲鹏志
+# ASN on Air
 
-一个探索地质变迁、文明掠夺与地缘政治的深度叙事项目。通过 AI 驱动的多维交互播客，呈现来自深空的证词。
+Agentic Social Network Now on Podcasting. 一个探索地质变迁、文明掠夺与地缘政治的深度叙事项目。
 
 预览地址: <https://podcast.git4ta.fun>
 
@@ -10,7 +10,7 @@
 
 ## 主要特性
 
-- 🤖 基于《鲲鹏志》原始文稿的深度再创作
+- 🤖 基于 Agentic Social Network 的深度内容分发
 - 🎯 多 Agent (Hermes, Picoclaw) 协同视角
 - 🎙️ 本地 TTS (CosyVoice) 高质量语音合成
 - 🌐 多语种、多方言支持 (规划中)

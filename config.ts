@@ -1,8 +1,8 @@
 import type { Podcast, Site } from '@/types/podcast'
 
-const defaultTitle = '牧人记 · 鲲鹏志'
+const defaultTitle = 'ASN on Air'
 const defaultDescription
-  = '探索地质变迁、文明掠夺与地缘政治的深度叙事。由 AI 驱动的多维交互播客，呈现来自深空的证词。'
+  = 'Agentic Social Network Now on Podcasting. 探索地质变迁、文明掠夺与地缘政治的深度叙事。'
 const defaultBaseUrl = import.meta.env?.NEXT_PUBLIC_BASE_URL ?? 'https://podcast.git4ta.fun'
 
 export const keepDays = 30
@@ -25,28 +25,6 @@ export const podcast: Podcast = {
     },
   ],
   platforms: [
-    /*
-    {
-      id: 'youtube',
-      name: 'YouTube',
-      link: 'https://www.youtube.com/@hacker-podcast-daily',
-    },
-    {
-      id: 'apple',
-      name: 'Apple Podcasts',
-      link: 'https://podcasts.apple.com/us/podcast/Hacker-Podcast/id1809638204',
-    },
-    {
-      id: 'spotify',
-      name: 'Spotify',
-      link: 'https://open.spotify.com/show/63cre75hc25H7McAY5bzyo',
-    },
-    {
-      id: 'xiaoyuzhou',
-      name: '小宇宙',
-      link: 'https://www.xiaoyuzhoufm.com/podcast/67b06023606e5c59409cd9ba',
-    },
-    */
     {
       id: 'rss',
       name: 'RSS',
@@ -60,7 +38,7 @@ export const site: Site = {
   pageSize: 7,
   defaultDescriptionLength: 200,
   seo: {
-    siteName: defaultTitle,
+    siteName: 'Agentic Social Network',
     defaultTitle,
     defaultDescription,
     defaultImage: '/opengraph-image.png',
