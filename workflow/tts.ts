@@ -109,6 +109,31 @@ async function murfTTS(text: string, gender: string, env: Env) {
   throw new Error(`Failed to fetch audio: ${result.statusText}`)
 }
 
+async function localTTS(text: string, gender: string, env: Env) {
+  if (!env.TTS_API_URL) {
+    throw new Error('TTS_API_URL is required for local TTS provider')
+  }
+
+  const result = await $fetch(env.TTS_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': env.TTS_API_KEY ? `Bearer ${env.TTS_API_KEY}` : '',
+    },
+    timeout: 60000,
+    body: {
+      text,
+      gender,
+      voice_id: gender === '男' ? env.MAN_VOICE_ID : env.WOMAN_VOICE_ID,
+      model: env.TTS_MODEL,
+      speed: env.AUDIO_SPEED,
+    },
+  })
+
+  const buffer = await result.arrayBuffer()
+  return new Blob([buffer], { type: 'audio/mpeg' })
+}
+
 export default function (text: string, gender: string, env: Env) {
   console.info('TTS_PROVIDER', env.TTS_PROVIDER)
   switch (env.TTS_PROVIDER) {
@@ -116,6 +141,8 @@ export default function (text: string, gender: string, env: Env) {
       return minimaxTTS(text, gender, env)
     case 'murf':
       return murfTTS(text, gender, env)
+    case 'local':
+      return localTTS(text, gender, env)
     default:
       return edgeTTS(text, gender, env)
   }

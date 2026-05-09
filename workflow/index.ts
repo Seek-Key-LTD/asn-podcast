@@ -9,6 +9,7 @@ import { concatAudioFiles, getHackerNewsStory, getHackerNewsTopStories } from '.
 
 interface Params {
   today?: string
+  articles?: { title: string, content: string, url?: string }[]
 }
 
 interface Env extends CloudflareEnv {
@@ -52,6 +53,16 @@ export class HackerNewsWorkflow extends WorkflowEntrypoint<Env, Params> {
     const maxTokens = Number.parseInt(this.env.OPENAI_MAX_TOKENS || '4096')
 
     const stories = await step.do(`get top stories ${today}`, retryConfig, async () => {
+      if (event.payload?.articles && event.payload.articles.length > 0) {
+        return event.payload.articles.map((article, index) => ({
+          id: `custom-${today}-${index}`,
+          title: article.title,
+          url: article.url || '',
+          content: article.content, // Temp field for custom content
+          hackerNewsUrl: article.url || '',
+        }))
+      }
+
       const topStories = await getHackerNewsTopStories(today, this.env)
 
       if (!topStories.length) {
@@ -67,6 +78,11 @@ export class HackerNewsWorkflow extends WorkflowEntrypoint<Env, Params> {
 
     for (const story of stories) {
       const storyResponse = await step.do(`get story ${story.id}: ${story.title}`, retryConfig, async () => {
+        // @ts-expect-error Custom content field
+        if (story.content) {
+          // @ts-expect-error Custom content field
+          return `<title>${story.title}</title>\n\n<article>${story.content}</article>`
+        }
         return await getHackerNewsStory(story, maxTokens, this.env)
       })
 
