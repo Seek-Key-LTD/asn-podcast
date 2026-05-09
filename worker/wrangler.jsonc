@@ -4,7 +4,7 @@
  */
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
-  "name": "hacker-podcast-worker",
+  "name": "asn-podcast-worker",
   "account_id": "e167cb36a5b95cb3cc8daf77a3f7d0b3",
   "main": "./index.ts",
   "minify": true,
@@ -43,7 +43,7 @@
   "kv_namespaces": [
     {
       "binding": "HACKER_PODCAST_KV",
-      "id": "bfc65509c1634589a29b90f956ab0d1a"
+      "id": "6a50d6f93dcc467a8552f889cd238da1"
     }
   ],
   "r2_buckets": [
