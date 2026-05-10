@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "hacker-podcast",
+	"name": "asn-podcast",
 	"account_id": "e167cb36a5b95cb3cc8daf77a3f7d0b3",
 	"main": "vinext/server/app-router-entry",
 	"upload_source_maps": true,

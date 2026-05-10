@@ -32,10 +32,10 @@ export async function GET(request: Request) {
     itunesCategory: [{ text: 'Technology' }, { text: 'News' }],
     itunesOwner: {
       name: podcast.base.title,
-      email: 'hacker-podcast@agi.li',
+      email: 'asn-podcast@git4ta.fun',
     },
-    managingEditor: 'hacker-podcast@agi.li',
-    webMaster: 'hacker-podcast@agi.li',
+    managingEditor: 'asn-podcast@git4ta.fun',
+    webMaster: 'asn-podcast@git4ta.fun',
   })
 
   const runEnv = env.NODE_ENV || 'production'
