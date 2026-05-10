@@ -48,27 +48,21 @@ export default {
       }
 
       try {
-        const payload = await request.json() as Article
-        // 构造多语种 Key: content:production:locale:zh:date:2026-05-09
-        const kvKey = `content:production:locale:${payload.locale || 'zh'}:date:${payload.date}`
-        await env.HACKER_PODCAST_KV.put(kvKey, JSON.stringify({
-          ...payload,
-          updatedAt: Date.now(),
-        }))
+        const body = await request.json<{ title: string, content: string, articles?: Array<{ title: string, content: string, url?: string }> }>()
         
-        // 更新语种索引 (用于首页流式加载)
-        const indexKey = `index:production:locale:${payload.locale || 'zh'}`
-        const existingIndex = await env.HACKER_PODCAST_KV.get(indexKey, 'json') as string[] || []
-        if (!existingIndex.includes(payload.date)) {
-          existingIndex.unshift(payload.date)
-          // 只保留最近 100 期
-          await env.HACKER_PODCAST_KV.put(indexKey, JSON.stringify(existingIndex.slice(0, 100)))
-        }
+        // Trigger workflow with custom payload
+        const instance = await env.HACKER_PODCAST_WORKFLOW.create()
 
-        return new Response('Published successfully', { status: 200 })
+        return new Response(JSON.stringify({ 
+          success: true, 
+          instanceId: instance.id,
+          message: 'Workflow triggered successfully' 
+        }), {
+          headers: { 'Content-Type': 'application/json' },
+        })
       }
-      catch (err) {
-        console.error('Publish failed', err)
+      catch (error) {
+        console.error('Failed to trigger workflow:', error)
         return new Response('Internal Server Error', { status: 500 })
       }
     }
