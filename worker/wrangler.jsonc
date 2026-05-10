@@ -34,7 +34,7 @@
   },
   "workflows": [
     {
-      "name": "hacker-podcast-workflow",
+      "name": "asn-podcast-workflow",
       "binding": "HACKER_PODCAST_WORKFLOW",
       "class_name": "HackerNewsWorkflow"
     }

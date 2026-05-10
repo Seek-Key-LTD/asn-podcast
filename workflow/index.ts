@@ -9,6 +9,28 @@ import { introPrompt, summarizeBlogPrompt, summarizePodcastPrompt, summarizeStor
 import synthesize from './tts'
 import { concatAudioFiles, getHackerNewsStory, getHackerNewsTopStories } from './utils'
 
+<<<<<<< HEAD
+=======
+interface Params {
+  today?: string
+  articles?: { title: string, content: string, url?: string }[]
+}
+
+interface Env extends CloudflareEnv {
+  OPENAI_BASE_URL: string
+  OPENAI_API_KEY: string
+  OPENAI_MODEL: string
+  OPENAI_THINKING_MODEL?: string
+  OPENAI_MAX_TOKENS?: string
+  JINA_KEY?: string
+  NODE_ENV: string
+  HACKER_PODCAST_WORKER_URL: string
+  HACKER_PODCAST_R2_BUCKET_URL: string
+  HACKER_PODCAST_WORKFLOW: Workflow
+  BROWSER: Fetcher
+}
+
+>>>>>>> d47e86e (feat: support multi-locale push API and rich metadata for Murenji)
 const retryConfig: WorkflowStepConfig = {
   retries: {
     limit: 5,
@@ -22,8 +44,78 @@ async function getTopStories(today: string, isDev: boolean, step: WorkflowStep, 
   return await step.do(stepNames.topStories(today), retryConfig, async () => {
     const topStories = await getHackerNewsTopStories(today, env)
 
+<<<<<<< HEAD
     if (!topStories.length) {
       throw new Error('no stories found')
+=======
+    const runEnv = this.env.NODE_ENV || 'production'
+    const isDev = runEnv !== 'production'
+    const breakTime = isDev ? '2 seconds' : '5 seconds'
+    const today = event.payload?.today || new Date().toISOString().split('T')[0]
+    const openai = createOpenAICompatible({
+      name: 'openai',
+      baseURL: this.env.OPENAI_BASE_URL!,
+      headers: {
+        Authorization: `Bearer ${this.env.OPENAI_API_KEY!}`,
+      },
+    })
+    const maxTokens = Number.parseInt(this.env.OPENAI_MAX_TOKENS || '4096')
+
+    const stories = await step.do(`get top stories ${today}`, retryConfig, async () => {
+      if (event.payload?.articles && event.payload.articles.length > 0) {
+        return event.payload.articles.map((article, index) => ({
+          id: `custom-${today}-${index}`,
+          title: article.title,
+          url: article.url || '',
+          content: article.content, // Temp field for custom content
+          hackerNewsUrl: article.url || '',
+        }))
+      }
+
+      const topStories = await getHackerNewsTopStories(today, this.env)
+
+      if (!topStories.length) {
+        throw new Error('no stories found')
+      }
+
+      topStories.length = Math.min(topStories.length, isDev ? 1 : 10)
+
+      return topStories
+    })
+
+    console.info('top stories', isDev ? stories : JSON.stringify(stories))
+
+    for (const story of stories) {
+      const storyResponse = await step.do(`get story ${story.id}: ${story.title}`, retryConfig, async () => {
+        // @ts-expect-error Custom content field
+        if (story.content) {
+          // @ts-expect-error Custom content field
+          return `<title>${story.title}</title>\n\n<article>${story.content}</article>`
+        }
+        return await getHackerNewsStory(story, maxTokens, this.env)
+      })
+
+      console.info(`get story ${story.id} content success`)
+
+      const text = await step.do(`summarize story ${story.id}: ${story.title}`, retryConfig, async () => {
+        const { text, usage, finishReason } = await generateText({
+          model: openai(this.env.OPENAI_MODEL!),
+          system: summarizeStoryPrompt,
+          prompt: storyResponse,
+        })
+
+        console.info(`get story ${story.id} summary success`, { text, usage, finishReason })
+        return text
+      })
+
+      await step.do(`store story ${story.id} summary`, retryConfig, async () => {
+        const storyKey = `tmp:${event.instanceId}:story:${story.id}`
+        await this.env.HACKER_PODCAST_KV.put(storyKey, `<story>${text}</story>`, { expirationTtl: 3600 })
+        return storyKey
+      })
+
+      await step.sleep('Give AI a break', breakTime)
+>>>>>>> d47e86e (feat: support multi-locale push API and rich metadata for Murenji)
     }
 
     topStories.length = Math.min(topStories.length, isDev ? 1 : 10)
