@@ -1,10 +1,9 @@
 'use client'
 
-import { Command, Github } from 'lucide-react'
+import { RiGithubFill } from '@remixicon/react'
 import { Fragment } from 'react'
 import { ThemeToggle } from '@/components/theme/toggle'
 import { externalLinks, podcast } from '@/config'
-import { setCommandMenuOpen } from '@/stores/ui-store'
 
 export function PodcastAside() {
   return (
@@ -32,7 +31,7 @@ export function PodcastAside() {
                 rel="noopener noreferrer"
                 className={`
                   cursor-pointer transition-colors
-                  hover:text-theme
+                  hover:text-theme-text
                 `}
                 title={`访问 ${host.name} 的主页`}
                 aria-label={`访问 ${host.name} 的主页`}
@@ -44,30 +43,18 @@ export function PodcastAside() {
         </span>
       </section>
       <section className="flex flex-col items-center gap-5">
-        <button
-          type="button"
-          onClick={() => setCommandMenuOpen(true)}
-          className={`
-            cursor-pointer transition-colors
-            hover:text-theme
-          `}
-          title="打开命令菜单"
-          aria-label="打开命令菜单"
-        >
-          <Command className="size-6" aria-hidden="true" />
-        </button>
         <a
           href={externalLinks.github}
           target="_blank"
           rel="noopener noreferrer"
           className={`
             cursor-pointer transition-colors
-            hover:text-theme
+            hover:text-theme-text
           `}
           title="打开 GitHub 仓库"
           aria-label="打开 GitHub 仓库"
         >
-          <Github className="size-6" />
+          <RiGithubFill className="size-6" />
         </a>
         <ThemeToggle />
       </section>

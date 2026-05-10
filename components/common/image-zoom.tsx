@@ -1,6 +1,17 @@
 'use client'
 
+import { Image } from '@unpic/react'
 import Zoom from 'react-medium-image-zoom'
+
+const remoteImagePattern = /^https?:\/\//
+
+const contentImageOperations = {
+  wsrv: {
+    fit: 'inside',
+    q: 82,
+    we: true,
+  },
+} as const
 
 interface ImageZoomProps {
   src: string
@@ -10,6 +21,7 @@ interface ImageZoomProps {
 
 export function ImageZoom({ src, alt, index }: ImageZoomProps) {
   const resolvedAlt = alt || `第 ${index + 1} 张图片`
+  const isRemoteImage = remoteImagePattern.test(src)
 
   return (
     <div className="relative my-6 w-full max-w-full rounded-lg shadow-md">
@@ -18,13 +30,17 @@ export function ImageZoom({ src, alt, index }: ImageZoomProps) {
         a11yNameButtonUnzoom="缩小图片"
         zoomMargin={24}
       >
-        <img
+        <Image
           src={src}
           alt={resolvedAlt}
+          layout="constrained"
           width={1200}
           height={800}
+          fallback={isRemoteImage ? 'wsrv' : undefined}
+          operations={contentImageOperations}
+          objectFit="contain"
           className="h-auto w-full rounded-lg object-contain"
-          loading={index === 0 ? 'eager' : 'lazy'}
+          priority={index === 0}
         />
       </Zoom>
     </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useStore } from '@tanstack/react-store'
+import { useSelector } from '@tanstack/react-store'
 import { Controls } from '@vidstack/react'
 import { EpisodeTitle } from '@/components/player/episode-title'
 import { Play } from '@/components/player/play'
@@ -11,11 +11,10 @@ import { TimeSliders } from '@/components/player/time-sliders'
 import { Mute, Volume } from '@/components/player/volume'
 import { cn } from '@/lib/utils'
 import { getPlayerStore } from '@/stores/player-store'
-import styles from '@/styles/player.module.css'
 
 export function PlayerLayout() {
   const playerStore = getPlayerStore()
-  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
+  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
 
   return (
     <Controls.Root
@@ -24,7 +23,7 @@ export function PlayerLayout() {
           flex w-full flex-col gap-3 px-4 py-3
           md:gap-5 md:px-10 md:py-4
         `,
-        styles.controls,
+        '[--media-menu-y-offset:10px] [--media-tooltip-y-offset:10px]',
       )}
     >
       {currentEpisode && (
@@ -52,8 +51,7 @@ export function PlayerLayout() {
 
         <div className={`
           flex items-center gap-3
-          md:absolute md:top-1/2 md:left-1/2 md:-translate-x-1/2
-          md:-translate-y-1/2 md:gap-4
+          md:absolute md:top-1/2 md:left-1/2 md:-translate-1/2 md:gap-4
         `}
         >
           <SeekBackward />
@@ -83,7 +81,7 @@ export function PlayerLayout() {
       </Controls.Group>
 
       <Controls.Group className={`
-        flex h-full w-full items-center gap-2
+        flex size-full items-center gap-2
         md:gap-3
       `}
       >

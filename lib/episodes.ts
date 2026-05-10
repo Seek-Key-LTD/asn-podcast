@@ -1,13 +1,17 @@
 import type { Episode } from '@/types/podcast'
 
-export function buildAudioUrl(staticHost: string, audioPath: string, updatedAt?: number) {
+function appendUpdatedAt(url: string, updatedAt?: number): string {
+  return updatedAt ? `${url}?t=${updatedAt}` : url
+}
+
+export function buildAudioUrl(staticHost: string, audioPath: string, updatedAt?: number): string {
   const normalizedHost = staticHost?.replace(/\/$/, '')
   if (/^https?:\/\//.test(audioPath)) {
-    return updatedAt ? `${audioPath}?t=${updatedAt}` : audioPath
+    return appendUpdatedAt(audioPath, updatedAt)
   }
+
   const cleanedPath = audioPath.replace(/^\//, '')
-  const base = `${normalizedHost}/${cleanedPath}`
-  return updatedAt ? `${base}?t=${updatedAt}` : base
+  return appendUpdatedAt(`${normalizedHost}/${cleanedPath}`, updatedAt)
 }
 
 function buildReferencesSection(stories?: Story[]): string {

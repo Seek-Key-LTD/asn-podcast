@@ -2,17 +2,13 @@ import { Store } from '@tanstack/store'
 
 interface UIStoreState {
   isEpisodeFullscreen: boolean
-  isCommandMenuOpen: boolean
-  hasCommandMenuLoaded: boolean
 }
 
 let uiStore: Store<UIStoreState> | null = null
 
-function createStore() {
+function createStore(): Store<UIStoreState> {
   return new Store<UIStoreState>({
     isEpisodeFullscreen: false,
-    isCommandMenuOpen: false,
-    hasCommandMenuLoaded: false,
   })
 }
 
@@ -27,7 +23,7 @@ export function getUIStore(): Store<UIStoreState> {
   return initUIStore()
 }
 
-export function setEpisodeFullscreen(isFullscreen: boolean) {
+export function setEpisodeFullscreen(isFullscreen: boolean): void {
   const store = getUIStore()
   store.setState(state => ({
     ...state,
@@ -35,31 +31,10 @@ export function setEpisodeFullscreen(isFullscreen: boolean) {
   }))
 }
 
-export function toggleEpisodeFullscreen() {
+export function toggleEpisodeFullscreen(): void {
   const store = getUIStore()
   store.setState(state => ({
     ...state,
     isEpisodeFullscreen: !state.isEpisodeFullscreen,
   }))
-}
-
-export function setCommandMenuOpen(open: boolean) {
-  const store = getUIStore()
-  store.setState(state => ({
-    ...state,
-    isCommandMenuOpen: open,
-    hasCommandMenuLoaded: state.hasCommandMenuLoaded || open,
-  }))
-}
-
-export function toggleCommandMenuOpen() {
-  const store = getUIStore()
-  store.setState((state) => {
-    const isCommandMenuOpen = !state.isCommandMenuOpen
-    return {
-      ...state,
-      isCommandMenuOpen,
-      hasCommandMenuLoaded: state.hasCommandMenuLoaded || isCommandMenuOpen,
-    }
-  })
 }

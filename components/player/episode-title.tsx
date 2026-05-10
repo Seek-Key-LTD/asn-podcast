@@ -1,13 +1,13 @@
 'use client'
 
-import { useStore } from '@tanstack/react-store'
+import { useSelector } from '@tanstack/react-store'
 import { ScrollTextContainer, ScrollTextRow } from '@/components/player/scroll-text'
 import { getPlayerStore } from '@/stores/player-store'
 
 export function EpisodeTitle() {
   const playerStore = getPlayerStore()
-  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
-  const isPlaying = useStore(playerStore, state => state.isPlaying)
+  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
+  const isPlaying = useSelector(playerStore, state => state.isPlaying)
 
   if (!currentEpisode) {
     return null

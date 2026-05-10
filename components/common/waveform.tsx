@@ -1,6 +1,6 @@
 'use client'
 
-import { useStore } from '@tanstack/react-store'
+import { useSelector } from '@tanstack/react-store'
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { getPlayerStore } from '@/stores/player-store'
 
@@ -56,7 +56,7 @@ function getPrefersReducedMotionServerSnapshot() {
 export function Waveform(props: React.SVGProps<SVGSVGElement>) {
   const id = useId()
   const playerStore = getPlayerStore()
-  const isPlaying = useStore(playerStore, state => state.isPlaying)
+  const isPlaying = useSelector(playerStore, state => state.isPlaying)
   const [animatedHeights, setAnimatedHeights] = useState<number[]>(() =>
     generateStaticHeights(),
   )

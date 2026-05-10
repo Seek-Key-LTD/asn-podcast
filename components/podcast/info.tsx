@@ -1,9 +1,10 @@
 'use client'
 
+import type { RemixiconComponentType } from '@remixicon/react'
 import type { ComponentType, ReactNode, SVGProps } from 'react'
 import type { PodcastInfo as PodcastInfoData } from '@/types/podcast'
-import { Podcast, Rss, Youtube } from 'lucide-react'
-import Image from 'next/image'
+import { RiAppleFill, RiRssLine, RiYoutubeFill } from '@remixicon/react'
+import { Image } from '@unpic/react'
 import Link from 'next/link'
 import { useId, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -16,21 +17,21 @@ import { credits, podcast, site } from '@/config'
 import { cn } from '@/lib/utils'
 
 interface PlatformConfig {
-  icon: ComponentType<SVGProps<SVGSVGElement>>
+  icon: ComponentType<SVGProps<SVGSVGElement>> | RemixiconComponentType
   colorClass: string
 }
 
 const platformIcons: Record<string, PlatformConfig> = {
   youtube: {
-    icon: Youtube,
+    icon: RiYoutubeFill,
     colorClass: 'text-red-500 hover:text-red-600',
   },
   apple: {
-    icon: Podcast,
+    icon: RiAppleFill,
     colorClass: 'text-purple-500 hover:text-purple-600',
   },
   rss: {
-    icon: Rss,
+    icon: RiRssLine,
     colorClass: 'text-orange-500 hover:text-orange-600',
   },
   xiaoyuzhou: {
@@ -42,6 +43,15 @@ const platformIcons: Record<string, PlatformConfig> = {
     colorClass: 'text-green-500 hover:text-green-600',
   },
 }
+
+const coverImageOperations = {
+  wsrv: {
+    a: 'entropy',
+    fit: 'cover',
+    q: 88,
+    we: true,
+  },
+} as const
 
 interface PodcastInfoProps {
   podcastInfo: PodcastInfoData
@@ -56,14 +66,14 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
   const descriptionContentId = useId()
   const { title, description, cover } = podcastInfo
   const coverAlt = `${title} 封面`
+  const coverSrc = new URL(cover, podcast.base.link).toString()
   const homeLinkTitle = `返回首页：${title}`
   const externalLinkTitle = '在新标签页打开外部链接'
   const shouldTruncate = description.length > site.defaultDescriptionLength
-  const displayDescription = isExpanded
-    ? description
-    : shouldTruncate
-      ? `${description.slice(0, site.defaultDescriptionLength)}…`
-      : description
+  let displayDescription = description
+  if (shouldTruncate && !isExpanded) {
+    displayDescription = `${description.slice(0, site.defaultDescriptionLength)}…`
+  }
   const markdownComponents = useMemo(() => ({
     p: ({ children }: { children?: ReactNode }) => (
       <p className="leading-relaxed">{children}</p>
@@ -74,8 +84,8 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
         target="_blank"
         rel="noopener noreferrer"
         className={`
-          font-medium text-theme underline transition-colors
-          hover:text-theme-hover
+          font-medium text-theme-text underline transition-colors
+          hover:text-theme-text-hover
         `}
         title={externalLinkTitle}
       >
@@ -101,6 +111,7 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
       itemType="https://schema.org/PodcastSeries"
     >
       <meta itemProp="url" content={podcast.base.link} />
+      <meta itemProp="image" content={cover} />
       <Waveform
         className={`
           absolute inset-x-0 top-0 w-full
@@ -125,14 +136,16 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
           `}
         >
           <Image
-            className="h-full w-full rounded-2xl object-cover"
-            src={cover}
+            className="size-full rounded-2xl object-cover"
+            src={coverSrc}
             alt={coverAlt}
+            layout="constrained"
             width={640}
             height={640}
+            fallback="wsrv"
+            operations={coverImageOperations}
+            objectFit="cover"
             priority
-            referrerPolicy="no-referrer"
-            itemProp="image"
           />
         </Link>
         <figcaption className="sr-only">{title}</figcaption>
@@ -146,7 +159,7 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
         <h2
           id={titleId}
           className={`
-            text-center text-2xl font-bold text-pretty break-words
+            text-center text-2xl font-bold text-pretty wrap-break-word
             md:text-left md:text-xl
           `}
           itemProp="name"
@@ -167,7 +180,7 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
           >
             <TinyWaveFormIcon
               colors={['fill-violet-300', 'fill-pink-300']}
-              className="h-2.5 w-2.5"
+              className="size-2.5"
               aria-hidden="true"
             />
             <span>关于</span>
@@ -199,9 +212,9 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
                   type="button"
                   onClick={() => setIsExpanded(!isExpanded)}
                   className={`
-                    cursor-pointer self-start font-medium text-theme
+                    cursor-pointer self-start font-medium text-theme-text
                     transition-colors
-                    hover:text-theme-hover
+                    hover:text-theme-text-hover
                   `}
                   aria-expanded={isExpanded}
                   aria-controls={descriptionContentId}
@@ -234,7 +247,7 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
                 >
                   <TinyWaveFormIcon
                     colors={['fill-indigo-300', 'fill-blue-300']}
-                    className="h-2.5 w-2.5"
+                    className="size-2.5"
                     aria-hidden="true"
                   />
                   <span>播放</span>
@@ -260,7 +273,7 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
                           className={`
                             flex cursor-pointer items-center gap-2
                             transition-colors
-                            hover:text-theme-hover
+                            hover:text-theme-text-hover
                           `}
                           aria-label={platformLinkTitle}
                           title={platformLinkTitle}
@@ -268,8 +281,8 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
                         >
                           <Icon
                             className={cn(`
-                              h-8 w-8
-                              md:h-6 md:w-6
+                              size-8
+                              md:size-6
                             `, config.colorClass)}
                             aria-hidden="true"
                           />
@@ -299,7 +312,7 @@ export function PodcastInfo({ podcastInfo }: PodcastInfoProps) {
       >
         <div className="absolute inset-0 flex items-center">
           <div className={`
-            h-px w-full bg-gradient-to-r from-transparent via-border
+            h-px w-full bg-linear-to-r from-transparent via-border
             to-transparent
           `}
           />

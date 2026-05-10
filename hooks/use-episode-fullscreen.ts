@@ -1,6 +1,6 @@
 'use client'
 
-import { useStore } from '@tanstack/react-store'
+import { useSelector } from '@tanstack/react-store'
 import { useEffect } from 'react'
 import { getUIStore, setEpisodeFullscreen, toggleEpisodeFullscreen } from '@/stores/ui-store'
 
@@ -11,7 +11,7 @@ interface UseEpisodeFullscreenOptions {
 
 export function useEpisodeFullscreen({ manageBodyLock = false, resetOnMount = false }: UseEpisodeFullscreenOptions = {}) {
   const uiStore = getUIStore()
-  const isFullscreen = useStore(uiStore, state => state.isEpisodeFullscreen)
+  const isFullscreen = useSelector(uiStore, state => state.isEpisodeFullscreen)
 
   useEffect(() => {
     if (!resetOnMount)
@@ -35,15 +35,15 @@ export function useEpisodeFullscreen({ manageBodyLock = false, resetOnMount = fa
     }
 
     if (isFullscreen) {
-      document.body.classList.add('episode-fullscreen-locked')
+      document.body.classList.add('overflow-hidden')
       document.addEventListener('keydown', handleKeyDown)
     }
     else {
-      document.body.classList.remove('episode-fullscreen-locked')
+      document.body.classList.remove('overflow-hidden')
     }
 
     return () => {
-      document.body.classList.remove('episode-fullscreen-locked')
+      document.body.classList.remove('overflow-hidden')
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [isFullscreen, manageBodyLock])

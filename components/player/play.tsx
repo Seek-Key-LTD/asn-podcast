@@ -19,10 +19,10 @@ export function Play({ tooltipPlacement, className }: MediaButtonProps) {
         <PlayButton
           className={cn(
             `
-              group ring-media-focus relative inline-flex size-12 cursor-pointer
-              items-center justify-center rounded-full bg-[#262626] text-white
-              outline-none ring-inset
-              data-[focus]:ring-4
+              group relative inline-flex size-12 cursor-pointer items-center
+              justify-center rounded-full bg-[#262626] text-white outline-none
+              ring-inset
+              data-focus:ring-4
               dark:bg-white dark:text-black
             `,
             className,
@@ -38,11 +38,10 @@ export function Play({ tooltipPlacement, className }: MediaButtonProps) {
       </Tooltip.Trigger>
       <Tooltip.Content
         className={`
-          parent-data-[open]:hidden
           z-10 animate-out rounded-sm bg-black/90 px-2 py-0.5 text-sm
           font-medium text-white fade-out slide-out-to-bottom-2
-          data-[visible]:animate-in data-[visible]:fade-in
-          data-[visible]:slide-in-from-bottom-4
+          data-visible:animate-in data-visible:fade-in
+          data-visible:slide-in-from-bottom-4
         `}
         placement={tooltipPlacement}
       >

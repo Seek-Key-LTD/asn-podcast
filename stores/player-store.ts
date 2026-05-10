@@ -5,15 +5,17 @@ export interface PlayerStoreState {
   currentEpisode: Episode | null
   isPlaying: boolean
   isSourceChanging: boolean
+  selectionSource: 'default' | 'user' | null
 }
 
 let playerStore: Store<PlayerStoreState> | null = null
 
-function createPlayerStore() {
+function createPlayerStore(): Store<PlayerStoreState> {
   return new Store<PlayerStoreState>({
     currentEpisode: null,
     isPlaying: false,
     isSourceChanging: false,
+    selectionSource: null,
   })
 }
 
@@ -31,40 +33,64 @@ export function getPlayerStore(): Store<PlayerStoreState> {
   return playerStore
 }
 
-export function setCurrentEpisode(episode: Episode) {
+export function setCurrentEpisode(episode: Episode): void {
   const store = getPlayerStore()
   store.setState(state => ({
     currentEpisode: episode,
     isPlaying: true,
     isSourceChanging: state.currentEpisode?.id !== episode.id,
+    selectionSource: 'user',
   }))
 }
 
-export function clearPlayerEpisode() {
+export function setDefaultEpisode(episode: Episode): void {
+  const store = getPlayerStore()
+  store.setState((state) => {
+    const canSetDefault = !state.currentEpisode
+    if (!canSetDefault) {
+      return state
+    }
+
+    return {
+      ...state,
+      currentEpisode: episode,
+      isPlaying: false,
+      isSourceChanging: false,
+      selectionSource: 'default',
+    }
+  })
+}
+
+export function clearPlayerEpisode(): void {
   const store = getPlayerStore()
   store.setState(() => ({
     currentEpisode: null,
     isPlaying: false,
     isSourceChanging: false,
+    selectionSource: null,
   }))
 }
 
-export function setIsPlaying(isPlaying: boolean) {
+export function setIsPlaying(isPlaying: boolean): void {
   const store = getPlayerStore()
-  store.setState(state => ({ ...state, isPlaying }))
+  store.setState(state => ({
+    ...state,
+    isPlaying,
+    selectionSource: isPlaying ? 'user' : state.selectionSource,
+  }))
 }
 
-export function setIsSourceChanging(isSourceChanging: boolean) {
+export function setIsSourceChanging(isSourceChanging: boolean): void {
   const store = getPlayerStore()
   store.setState(state => ({ ...state, isSourceChanging }))
 }
 
-export function play() {
+export function play(): void {
   const store = getPlayerStore()
-  store.setState(state => ({ ...state, isPlaying: true }))
+  store.setState(state => ({ ...state, isPlaying: true, selectionSource: 'user' }))
 }
 
-export function pause() {
+export function pause(): void {
   const store = getPlayerStore()
   store.setState(state => ({ ...state, isPlaying: false, isSourceChanging: false }))
 }

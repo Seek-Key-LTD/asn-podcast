@@ -13,7 +13,7 @@ export function SeekForward() {
             justify-center rounded-md ring-sky-400 outline-none ring-inset
             hover:bg-white/20
             aria-hidden:hidden
-            data-[focus]:ring-4
+            data-focus:ring-4
           `}
           seconds={15}
           data-umami-event="seek-forward"
@@ -22,11 +22,10 @@ export function SeekForward() {
         </SeekButton>
       </Tooltip.Trigger>
       <Tooltip.Content className={`
-        parent-data-[open]:hidden
         z-10 animate-out rounded-sm bg-black/90 px-2 py-0.5 text-sm font-medium
         text-white fade-out slide-out-to-bottom-2
-        data-[visible]:animate-in data-[visible]:fade-in
-        data-[visible]:slide-in-from-bottom-4
+        data-visible:animate-in data-visible:fade-in
+        data-visible:slide-in-from-bottom-4
       `}
       >
         快进 15 秒
@@ -45,7 +44,7 @@ export function SeekBackward() {
             justify-center rounded-md ring-sky-400 outline-none ring-inset
             hover:bg-white/20
             aria-hidden:hidden
-            data-[focus]:ring-4
+            data-focus:ring-4
           `}
           seconds={-15}
           data-umami-event="seek-backward"
@@ -54,11 +53,10 @@ export function SeekBackward() {
         </SeekButton>
       </Tooltip.Trigger>
       <Tooltip.Content className={`
-        parent-data-[open]:hidden
         z-10 animate-out rounded-sm bg-black/90 px-2 py-0.5 text-sm font-medium
         text-white fade-out slide-out-to-bottom-2
-        data-[visible]:animate-in data-[visible]:fade-in
-        data-[visible]:slide-in-from-bottom-4
+        data-visible:animate-in data-visible:fade-in
+        data-visible:slide-in-from-bottom-4
       `}
       >
         快退 15 秒

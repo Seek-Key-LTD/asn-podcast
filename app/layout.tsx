@@ -1,12 +1,8 @@
-import type { Metadata } from 'next'
+import type { ThemeColor } from '@/types/podcast'
 import { Providers } from '@/components/providers'
 import { podcast, site } from '@/config'
 import { getAbsoluteUrl } from '@/lib/seo'
 import './globals.css'
-import 'react-medium-image-zoom/dist/styles.css'
-import '@vidstack/react/player/styles/base.css'
-import '@vidstack/react/player/styles/default/theme.css'
-import '@vidstack/react/player/styles/default/layouts/audio.css'
 
 const themeInitializer = `
   (function() {
@@ -29,7 +25,17 @@ const themeInitializer = `
   })()
 `
 
-export const metadata: Metadata = {
+const themeClassNames = {
+  blue: 'theme-blue',
+  pink: 'theme-pink',
+  purple: 'theme-purple',
+  green: 'theme-green',
+  yellow: 'theme-yellow',
+  orange: 'theme-orange',
+  red: 'theme-red',
+} satisfies Record<ThemeColor, string>
+
+export const metadata = {
   title: {
     default: site.seo.defaultTitle,
     template: `%s · ${site.seo.siteName}`,
@@ -76,9 +82,7 @@ export default function RootLayout({
   return (
     <html
       lang="zh"
-      className={`
-        theme-${site.themeColor}
-      `}
+      className={themeClassNames[site.themeColor]}
       suppressHydrationWarning
     >
       <head>
@@ -91,7 +95,7 @@ export default function RootLayout({
           href="#main-scroll-container"
           className={`
             sr-only
-            focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100]
+            focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-100
             focus:rounded-md focus:bg-background focus:px-4 focus:py-2
             focus:text-foreground focus:shadow-lg
             focus-visible:ring-2 focus-visible:ring-ring

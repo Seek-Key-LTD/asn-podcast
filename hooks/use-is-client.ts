@@ -2,9 +2,9 @@
 
 import { useSyncExternalStore } from 'react'
 
-const subscribe = () => () => {}
+const subscribe = (): (() => void) => () => {}
 
-export function useIsClient() {
+export function useIsClient(): boolean {
   return useSyncExternalStore(
     subscribe,
     () => typeof window !== 'undefined',

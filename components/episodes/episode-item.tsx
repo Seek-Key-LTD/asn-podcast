@@ -1,13 +1,13 @@
 'use client'
 
 import type { Episode } from '@/types/podcast'
-import { useStore } from '@tanstack/react-store'
-import { Pause, Play } from 'lucide-react'
+import { RiPauseFill, RiPlayFill } from '@remixicon/react'
+import { useSelector } from '@tanstack/react-store'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { formatZhCnUtcDate, toIsoDateString } from '@/lib/date'
 import { cn } from '@/lib/utils'
-import { getPageStore } from '@/stores/page-store'
 import { getPlayerStore, pause, play, setCurrentEpisode } from '@/stores/player-store'
 
 interface EpisodeItemProps {
@@ -15,11 +15,9 @@ interface EpisodeItemProps {
 }
 
 export function EpisodeItem({ episode }: EpisodeItemProps) {
-  const pageStore = getPageStore()
-  const currentPage = useStore(pageStore, state => state.currentPage)
   const playerStore = getPlayerStore()
-  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
-  const isPlaying = useStore(playerStore, state => state.isPlaying)
+  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
+  const isPlaying = useSelector(playerStore, state => state.isPlaying)
 
   const isCurrentEpisode = currentEpisode?.id === episode.id
   const isCurrentlyPlaying = isCurrentEpisode && isPlaying
@@ -36,16 +34,10 @@ export function EpisodeItem({ episode }: EpisodeItemProps) {
     }
   }
 
-  const publishedDate = new Date(episode.published)
-  const dateFormatter = new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC',
-  }).format(publishedDate)
-  const isoPublishedDate = publishedDate.toISOString()
+  const dateFormatter = formatZhCnUtcDate(episode.published)
+  const isoPublishedDate = toIsoDateString(episode.published)
 
-  const linkHref = currentPage > 1 ? `/episode/${episode.id}?page=${currentPage}` : `/episode/${episode.id}`
+  const linkHref = `/episode/${episode.id}`
   const episodeLinkTitle = `查看《${episode.title}》详情`
   const showNotesTitle = `打开《${episode.title}》的节目详情页`
   const externalLinkTitle = '在新标签页打开外部链接'
@@ -78,8 +70,7 @@ export function EpisodeItem({ episode }: EpisodeItemProps) {
           {dateFormatter}
         </time>
         <h3 className={`
-          text-xl leading-tight font-bold text-pretty break-words
-          text-foreground
+          text-xl/tight font-bold text-pretty wrap-break-word text-foreground
           md:text-2xl
         `}
         >
@@ -87,7 +78,7 @@ export function EpisodeItem({ episode }: EpisodeItemProps) {
             href={linkHref}
             className={`
               cursor-pointer transition-colors
-              hover:text-theme
+              hover:text-theme-text
             `}
             itemProp="url"
             title={episodeLinkTitle}
@@ -99,7 +90,7 @@ export function EpisodeItem({ episode }: EpisodeItemProps) {
         {episode.description && (
           <div
             className={cn(
-              `line-clamp-2 leading-relaxed break-words text-foreground/80`,
+              `line-clamp-2 leading-relaxed wrap-break-word text-foreground/80`,
               `
                 text-sm
                 md:text-base
@@ -130,8 +121,8 @@ export function EpisodeItem({ episode }: EpisodeItemProps) {
         <div
           className={cn(
             `
-              mt-2 flex flex-wrap items-center font-medium text-theme
-              hover:text-theme-hover
+              mt-2 flex flex-wrap items-center font-medium text-theme-text
+              hover:text-theme-text-hover
             `,
             `
               gap-3 text-xs
@@ -143,23 +134,23 @@ export function EpisodeItem({ episode }: EpisodeItemProps) {
             type="button"
             onClick={handlePlayPause}
             className={`
-              flex cursor-pointer items-center gap-1.5 font-medium text-theme
-              transition-colors
-              hover:text-theme-hover
+              flex cursor-pointer items-center gap-1.5 font-medium
+              text-theme-text transition-colors
+              hover:text-theme-text-hover
               md:gap-2
             `}
             aria-label={isCurrentlyPlaying ? '暂停播放' : '播放节目'}
           >
             {isCurrentlyPlaying
               ? (
-                  <Pause className={`
+                  <RiPauseFill className={`
                     size-3.5
                     md:size-4
                   `}
                   />
                 )
               : (
-                  <Play className={`
+                  <RiPlayFill className={`
                     size-3.5
                     md:size-4
                   `}
@@ -171,8 +162,8 @@ export function EpisodeItem({ episode }: EpisodeItemProps) {
           <Link
             href={linkHref}
             className={`
-              cursor-pointer font-medium text-theme
-              hover:text-theme-hover
+              cursor-pointer font-medium text-theme-text
+              hover:text-theme-text-hover
             `}
             title={showNotesTitle}
             aria-label={showNotesTitle}

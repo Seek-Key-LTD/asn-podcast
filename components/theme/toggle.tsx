@@ -1,7 +1,7 @@
 'use client'
 
 import type { Theme } from '@/stores/theme-store'
-import { Moon, Sun } from 'lucide-react'
+import { RiMoonLine, RiSunLine } from '@remixicon/react'
 import { useTheme } from '@/components/theme/use-theme'
 import { cn } from '@/lib/utils'
 
@@ -38,16 +38,16 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
       onClick={toggleTheme}
       className={`
         cursor-pointer transition-colors
-        hover:text-theme
+        hover:text-theme-text
       `}
       aria-label="切换主题"
     >
-      <Sun className={cn(`
+      <RiSunLine className={cn(`
         size-6
         dark:hidden
       `, className)}
       />
-      <Moon className={cn(`
+      <RiMoonLine className={cn(`
         hidden size-6
         dark:block
       `, className)}

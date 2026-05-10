@@ -13,9 +13,22 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "next/navigation": [
+        "./node_modules/vinext/dist/shims/navigation"
+      ],
+      "next/server": [
+        "./node_modules/vinext/dist/shims/server"
+      ],
+      "next/link": [
+        "./node_modules/vinext/dist/shims/link"
+      ],
+      "next/image": [
+        "./node_modules/vinext/dist/shims/image"
       ]
     },
     "resolveJsonModule": true,
+    "types": ["vite/client", "react", "react-dom"],
     "allowJs": true,
     "strict": true,
     "noEmit": true,
@@ -24,7 +37,6 @@
     "skipLibCheck": true
   },
   "include": [
-    "next-env.d.ts",
     "cloudflare-env.d.ts",
     "vite-env.d.ts",
     "**/*.ts",

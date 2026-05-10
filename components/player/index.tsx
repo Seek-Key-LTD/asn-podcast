@@ -1,12 +1,11 @@
 'use client'
 
-import { useStore } from '@tanstack/react-store'
+import { useSelector } from '@tanstack/react-store'
 import {
   MediaPlayer,
 
   MediaProvider,
   useMediaPlayer,
-  useMediaState,
 } from '@vidstack/react'
 import { useEffect } from 'react'
 import { PlayerLayout } from '@/components/player/layout'
@@ -17,15 +16,8 @@ import { getPlayerStore, pause, play, setIsPlaying, setIsSourceChanging } from '
 function PlayerContent() {
   const player = useMediaPlayer()
   const playerStore = getPlayerStore()
-  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
-  const isPlaying = useStore(playerStore, state => state.isPlaying)
-  const canPlay = useMediaState('canPlay')
-
-  useEffect(() => {
-    if (canPlay) {
-      setIsSourceChanging(false)
-    }
-  }, [canPlay])
+  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
+  const isPlaying = useSelector(playerStore, state => state.isPlaying)
 
   useEffect(() => {
     if (!player)
@@ -93,8 +85,8 @@ function PlayerContent() {
 
 export function Player() {
   const playerStore = getPlayerStore()
-  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
-  const isPlaying = useStore(playerStore, state => state.isPlaying)
+  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
+  const isPlaying = useSelector(playerStore, state => state.isPlaying)
   const { isFullscreen: isEpisodeFullscreen } = useEpisodeFullscreen()
   const hasPlayer = currentEpisode !== null
   const shouldShowPlayer = hasPlayer && !isEpisodeFullscreen
@@ -102,22 +94,19 @@ export function Player() {
   return (
     <div
       className={cn(
-        `
-          episode-player fixed right-0 bottom-0 left-0 z-50
-          pb-[env(safe-area-inset-bottom)]
-        `,
+        `fixed inset-x-0 bottom-0 z-50 pb-[env(safe-area-inset-bottom)]`,
         isEpisodeFullscreen
           ? `
             md:left-0
             lg:left-0
           `
           : `
-            md:left-[24rem]
-            lg:left-[28rem]
+            md:left-96
+            lg:left-112
           `,
         `
-          border-t bg-background/95 backdrop-blur
-          supports-[backdrop-filter]:bg-background/60
+          border-t bg-background/95 backdrop-blur-sm
+          supports-backdrop-filter:bg-background/60
         `,
         'transition-opacity duration-300',
         shouldShowPlayer
@@ -127,9 +116,11 @@ export function Player() {
     >
       <MediaPlayer
         src={currentEpisode?.audio.src}
+        autoPlay={isPlaying}
         paused={!isPlaying}
         viewType="audio"
         streamType="on-demand"
+        preload="none"
         logLevel="warn"
         playsInline
         title={currentEpisode?.title || ''}

@@ -1,11 +1,11 @@
-import type { Metadata } from 'next'
 import { env } from 'cloudflare:workers'
 import { notFound } from 'next/navigation'
 import { EpisodeDetail } from '@/components/episodes/detail'
 import { PodcastScaffold } from '@/components/podcast/scaffold'
-import { StructuredData } from '@/components/structured-data'
+import { StructuredData } from '@/components/seo/structured-data'
 import { podcast, site } from '@/config'
 import { getArticleByDate } from '@/lib/articles'
+import { toIsoDateString } from '@/lib/date'
 import { buildEpisodeFromArticle } from '@/lib/episodes'
 import { cleanMetadataDescription, getAbsoluteUrl } from '@/lib/seo'
 
@@ -15,7 +15,7 @@ export async function generateMetadata({
   params,
 }: {
   params: Promise<{ date: string }>
-}): Promise<Metadata> {
+}) {
   const { date } = await params
   const post = await getArticleByDate(date)
 
@@ -40,7 +40,7 @@ export async function generateMetadata({
       url,
       locale: site.seo.locale,
       type: 'article',
-      publishedTime: new Date(episode.published).toISOString(),
+      publishedTime: toIsoDateString(episode.published),
       images: [
         {
           url: getAbsoluteUrl(site.seo.defaultImage),
@@ -85,6 +85,8 @@ export default async function PostPage({
   }
   const url = `${podcast.base.link}/episode/${episode.id}`
   const description = cleanMetadataDescription(episode.description || site.seo.defaultDescription)
+  const publishedDate = toIsoDateString(episode.published)
+  const modifiedDate = toIsoDateString(post.updatedAt ?? episode.published)
   const organizationId = `${podcast.base.link}/#organization`
   const podcastId = `${podcast.base.link}/#podcast`
   const structuredData: Record<string, unknown> = {
@@ -117,8 +119,8 @@ export default async function PostPage({
         description,
         url,
         'image': getAbsoluteUrl(site.seo.defaultImage),
-        'datePublished': new Date(episode.published).toISOString(),
-        'dateModified': new Date(post.updatedAt ?? episode.published).toISOString(),
+        'datePublished': publishedDate,
+        'dateModified': modifiedDate,
         'inLanguage': 'zh-CN',
         'mainEntityOfPage': {
           '@type': 'WebPage',
@@ -137,7 +139,7 @@ export default async function PostPage({
         'name': title,
         description,
         url,
-        'datePublished': new Date(episode.published).toISOString(),
+        'datePublished': publishedDate,
         'associatedMedia': {
           '@type': 'MediaObject',
           'contentUrl': episode.audio.src,

@@ -138,23 +138,6 @@
   background: rgba(0, 0, 0, 0.03);
 }
 
-body.episode-fullscreen-locked {
-  overflow: hidden;
-}
-
-.episode-fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background-color: var(--background);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.episode-fullscreen .episode-page-header {
-  display: none;
-}
-
 @media (prefers-color-scheme: dark) {
   .episode-content code {
     background: rgba(255, 255, 255, 0.1);

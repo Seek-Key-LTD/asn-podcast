@@ -5,16 +5,8 @@ export interface ImageInfo {
 
 export function extractImagesFromMarkdown(content: string): ImageInfo[] {
   const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g
-  const matches: ImageInfo[] = []
-  let match: RegExpExecArray | null = imgRegex.exec(content)
-
-  while (match !== null) {
-    matches.push({
-      src: match[2] ?? '',
-      alt: match[1] ?? '',
-    })
-    match = imgRegex.exec(content)
-  }
-
-  return matches
+  return Array.from(content.matchAll(imgRegex), match => ({
+    src: match[2] ?? '',
+    alt: match[1] ?? '',
+  }))
 }

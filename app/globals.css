@@ -1,6 +1,11 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import 'react-medium-image-zoom/dist/styles.css';
+@import '@vidstack/react/player/styles/base.css';
+@import '@vidstack/react/player/styles/default/theme.css';
+@import '@vidstack/react/player/styles/default/layouts/audio.css';
 @import '../styles/view-transition.css';
+@import '../styles/episode.css' layer(components);
 
 @custom-variant dark (&:is(.dark *));
 
@@ -42,6 +47,8 @@
     --sidebar-ring: oklch(0.871 0.006 286.286);
     --theme: oklch(0.565 0.194 246.34);
     --theme-hover: oklch(0.502 0.182 249.26);
+    --theme-text: oklch(0.537 0.194 246.34);
+    --theme-text-hover: oklch(0.528 0.182 249.26);
     --theme-gradient-start: #4989e8;
     --theme-gradient-mid: #6159da;
     --theme-gradient-end: #8b5cf6;
@@ -86,6 +93,8 @@
   .theme-blue {
     --theme: oklch(0.565 0.194 246.34);
     --theme-hover: oklch(0.502 0.182 249.26);
+    --theme-text: oklch(0.537 0.194 246.34);
+    --theme-text-hover: oklch(0.528 0.182 249.26);
     --theme-gradient-start: #4989e8;
     --theme-gradient-mid: #6159da;
     --theme-gradient-end: #8b5cf6;
@@ -94,6 +103,8 @@
   .theme-pink {
     --theme: oklch(0.667 0.213 348.3);
     --theme-hover: oklch(0.617 0.203 352.46);
+    --theme-text: oklch(0.576 0.213 348.3);
+    --theme-text-hover: oklch(0.56 0.203 352.46);
     --theme-gradient-start: #ec4899;
     --theme-gradient-mid: #f472b6;
     --theme-gradient-end: #ff54ad;
@@ -102,6 +113,8 @@
   .theme-purple {
     --theme: oklch(0.628 0.232 295.76);
     --theme-hover: oklch(0.579 0.221 297.01);
+    --theme-text: oklch(0.574 0.232 295.76);
+    --theme-text-hover: oklch(0.559 0.221 297.01);
     --theme-gradient-start: #8b5cf6;
     --theme-gradient-mid: #a855f7;
     --theme-gradient-end: #c084fc;
@@ -110,6 +123,8 @@
   .theme-green {
     --theme: oklch(0.646 0.177 161.05);
     --theme-hover: oklch(0.593 0.165 164.14);
+    --theme-text: oklch(0.51 0.177 161.05);
+    --theme-text-hover: oklch(0.497 0.165 164.14);
     --theme-gradient-start: #10b981;
     --theme-gradient-mid: #34d399;
     --theme-gradient-end: #6ee7b7;
@@ -118,6 +133,8 @@
   .theme-yellow {
     --theme: oklch(0.727 0.177 84.01);
     --theme-hover: oklch(0.677 0.169 87.35);
+    --theme-text: oklch(0.549 0.177 84.01);
+    --theme-text-hover: oklch(0.534 0.169 87.35);
     --theme-gradient-start: #f59e0b;
     --theme-gradient-mid: #fbbf24;
     --theme-gradient-end: #fcd34d;
@@ -126,6 +143,8 @@
   .theme-orange {
     --theme: oklch(0.682 0.199 50.74);
     --theme-hover: oklch(0.634 0.189 53.42);
+    --theme-text: oklch(0.564 0.199 50.74);
+    --theme-text-hover: oklch(0.548 0.189 53.42);
     --theme-gradient-start: #f97316;
     --theme-gradient-mid: #fb923c;
     --theme-gradient-end: #fdba74;
@@ -134,9 +153,46 @@
   .theme-red {
     --theme: oklch(0.628 0.234 25.97);
     --theme-hover: oklch(0.577 0.223 28.81);
+    --theme-text: oklch(0.576 0.234 25.97);
+    --theme-text-hover: oklch(0.56 0.223 28.81);
     --theme-gradient-start: #ef4444;
     --theme-gradient-mid: #f87171;
     --theme-gradient-end: #fca5a5;
+  }
+
+  .dark.theme-blue {
+    --theme-text: oklch(0.584 0.194 246.34);
+    --theme-text-hover: oklch(0.605 0.182 249.26);
+  }
+
+  .dark.theme-pink {
+    --theme-text: oklch(0.621 0.213 348.3);
+    --theme-text-hover: oklch(0.635 0.203 352.46);
+  }
+
+  .dark.theme-purple {
+    --theme-text: oklch(0.619 0.232 295.76);
+    --theme-text-hover: oklch(0.632 0.221 297.01);
+  }
+
+  .dark.theme-green {
+    --theme-text: oklch(0.558 0.177 161.05);
+    --theme-text-hover: oklch(0.576 0.165 164.14);
+  }
+
+  .dark.theme-yellow {
+    --theme-text: oklch(0.595 0.177 84.01);
+    --theme-text-hover: oklch(0.608 0.169 87.35);
+  }
+
+  .dark.theme-orange {
+    --theme-text: oklch(0.609 0.199 50.74);
+    --theme-text-hover: oklch(0.623 0.189 53.42);
+  }
+
+  .dark.theme-red {
+    --theme-text: oklch(0.622 0.234 25.97);
+    --theme-text-hover: oklch(0.634 0.223 28.81);
   }
 
   * {
@@ -204,4 +260,6 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-theme: var(--theme);
   --color-theme-hover: var(--theme-hover);
+  --color-theme-text: var(--theme-text);
+  --color-theme-text-hover: var(--theme-text-hover);
 }

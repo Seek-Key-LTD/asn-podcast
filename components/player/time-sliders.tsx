@@ -5,8 +5,7 @@ import { TimeSlider } from '@vidstack/react'
 export function TimeSliders() {
   return (
     <TimeSlider.Root className={`
-      time-slider group relative inline-flex !h-1 w-full cursor-pointer
-      items-center !p-0
+      group relative inline-flex h-1! w-full cursor-pointer items-center p-0!
     `}
     >
       <TimeSlider.Chapters className="size-full">
@@ -18,19 +17,18 @@ export function TimeSliders() {
               ref={forwardRef}
             >
               <TimeSlider.Track className={`
-                ring-media-focus relative z-0 h-1 w-full bg-black/30
-                group-data-[focus]:ring-[1px]
-                dark:bg-white/30
+                relative z-0 h-1 w-full bg-black/30 ring-black/40
+                group-data-focus:ring-[1px]
+                dark:bg-white/30 dark:ring-white/40
               `}
               >
                 <TimeSlider.TrackFill className={`
-                  bg-media-brand absolute h-1 w-[var(--chapter-fill)] bg-black
-                  will-change-[width]
+                  absolute h-1 w-(--chapter-fill) bg-black will-change-[width]
                   dark:bg-white
                 `}
                 />
                 <TimeSlider.Progress className={`
-                  absolute z-10 h-1 w-[var(--chapter-progress)] bg-black/40
+                  absolute z-10 h-1 w-(--chapter-progress) bg-black/40
                   will-change-[width]
                   dark:bg-white/40
                 `}
@@ -41,11 +39,11 @@ export function TimeSliders() {
       </TimeSlider.Chapters>
 
       <TimeSlider.Thumb className={`
-        absolute top-1/2 left-[var(--slider-fill)] z-20 h-[15px] w-[15px]
-        -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#010101]
-        bg-black opacity-0 ring-black/40 transition-opacity will-change-[left]
-        group-data-[active]:opacity-100
-        group-data-[dragging]:ring-4
+        absolute top-1/2 left-(--slider-fill) z-20 size-[15px] -translate-1/2
+        rounded-full border border-[#010101] bg-black opacity-0 ring-black/40
+        transition-opacity will-change-[left]
+        group-data-active:opacity-100
+        group-data-dragging:ring-4
         dark:border-[#cacaca] dark:bg-white dark:ring-white/40
       `}
       />
@@ -53,7 +51,7 @@ export function TimeSliders() {
       <TimeSlider.Preview className={`
         pointer-events-none mb-2 flex flex-col items-center opacity-0
         transition-opacity duration-200
-        data-[visible]:opacity-100
+        data-visible:opacity-100
       `}
       >
         <TimeSlider.ChapterTitle className="mt-2 text-sm" />

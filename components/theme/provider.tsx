@@ -1,7 +1,7 @@
 'use client'
 
 import type { Theme } from '@/stores/theme-store'
-import { useStore } from '@tanstack/react-store'
+import { useSelector } from '@tanstack/react-store'
 import { useEffect } from 'react'
 import { initThemeStore } from '@/stores/theme-store'
 
@@ -17,7 +17,7 @@ export function ThemeProvider({
   storageKey = 'next-ui-theme',
 }: ThemeProviderProps) {
   const themeStore = initThemeStore(defaultTheme, storageKey)
-  const theme = useStore(themeStore, state => state.theme)
+  const theme = useSelector(themeStore, state => state.theme)
 
   useEffect(() => {
     const root = document.documentElement

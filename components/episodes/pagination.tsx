@@ -1,27 +1,23 @@
 'use client'
 
-import type { MouseEvent } from 'react'
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { RiArrowLeftSLine, RiArrowRightSLine } from '@remixicon/react'
+import Link from 'next/link'
 import { useMemo } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
   PaginationItem,
-  PaginationLink,
 } from '@/components/ui/pagination'
 import { cn } from '@/lib/utils'
-import { getPageStore } from '@/stores/page-store'
 
-interface EpisodesPaginationProps {
+interface EpisodePaginationProps {
   currentPage: number
   totalPages: number
 }
 
-export function EpisodesPagination({ currentPage, totalPages }: EpisodesPaginationProps) {
-  const router = useRouter()
-
+export function EpisodePagination({ currentPage, totalPages }: EpisodePaginationProps) {
   const pages = useMemo(() => {
     const result: Array<{ type: 'page', value: number } | { type: 'ellipsis', key: string }> = []
     for (let page = 1; page <= totalPages; page += 1) {
@@ -43,38 +39,8 @@ export function EpisodesPagination({ currentPage, totalPages }: EpisodesPaginati
     return result
   }, [currentPage, totalPages])
 
-  const scrollToTop = () => {
-    setTimeout(() => {
-      const mainContainer = document.getElementById('main-scroll-container')
-      mainContainer?.scrollTo({ top: 0, behavior: 'auto' })
-      window.scrollTo({ top: 0, behavior: 'auto' })
-    }, 100)
-  }
-
   const getPageHref = (page: number) => {
-    return page <= 1 ? '/' : `/?page=${page}`
-  }
-
-  const setPage = (page: number) => {
-    if (page === currentPage)
-      return
-    const url = getPageHref(page)
-    router.push(url, { scroll: true })
-    const pageStore = getPageStore()
-    pageStore.setState(() => ({ currentPage: page }))
-    scrollToTop()
-  }
-
-  const handlePageClick = (event: MouseEvent<HTMLAnchorElement>, page: number, disabled = false) => {
-    if (disabled) {
-      event.preventDefault()
-      return
-    }
-    if (event.button !== 0 || event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) {
-      return
-    }
-    event.preventDefault()
-    setPage(page)
+    return page <= 1 ? '/' : `/page/${page}`
   }
 
   if (totalPages <= 1) {
@@ -91,19 +57,26 @@ export function EpisodesPagination({ currentPage, totalPages }: EpisodesPaginati
       <Pagination>
         <PaginationContent>
           <PaginationItem>
-            <PaginationLink
-              href={getPageHref(Math.max(1, currentPage - 1))}
+            <Button
+              variant="ghost"
+              size="icon"
               className={cn(
                 'cursor-pointer',
                 currentPage === 1 && 'opacity-50',
               )}
-              aria-label="上一页"
-              aria-disabled={currentPage === 1}
-              tabIndex={currentPage === 1 ? -1 : undefined}
-              onClick={event => handlePageClick(event, Math.max(1, currentPage - 1), currentPage === 1)}
+              nativeButton={false}
+              render={(
+                <Link
+                  href={getPageHref(Math.max(1, currentPage - 1))}
+                  scroll
+                  aria-label="上一页"
+                  aria-disabled={currentPage === 1}
+                  tabIndex={currentPage === 1 ? -1 : undefined}
+                />
+              )}
             >
-              <ChevronLeftIcon className="size-4" aria-hidden="true" />
-            </PaginationLink>
+              <RiArrowLeftSLine className="size-4" aria-hidden="true" />
+            </Button>
           </PaginationItem>
 
           {pages.map((item) => {
@@ -118,9 +91,9 @@ export function EpisodesPagination({ currentPage, totalPages }: EpisodesPaginati
             const page = item.value
             return (
               <PaginationItem key={page}>
-                <PaginationLink
-                  href={getPageHref(page)}
-                  isActive={page === currentPage}
+                <Button
+                  variant={page === currentPage ? 'outline' : 'ghost'}
+                  size="icon"
                   className={cn(
                     'cursor-pointer',
                     page === currentPage && `
@@ -128,28 +101,44 @@ export function EpisodesPagination({ currentPage, totalPages }: EpisodesPaginati
                       hover:bg-theme-hover hover:text-white
                     `,
                   )}
-                  onClick={event => handlePageClick(event, page)}
+                  nativeButton={false}
+                  render={(
+                    <Link
+                      href={getPageHref(page)}
+                      scroll
+                      aria-current={page === currentPage ? 'page' : undefined}
+                      data-slot="pagination-link"
+                      data-active={page === currentPage}
+                    />
+                  )}
                 >
                   {page}
-                </PaginationLink>
+                </Button>
               </PaginationItem>
             )
           })}
 
           <PaginationItem>
-            <PaginationLink
-              href={getPageHref(Math.min(totalPages, currentPage + 1))}
+            <Button
+              variant="ghost"
+              size="icon"
               className={cn(
                 'cursor-pointer',
                 currentPage === totalPages && 'opacity-50',
               )}
-              aria-label="下一页"
-              aria-disabled={currentPage === totalPages}
-              tabIndex={currentPage === totalPages ? -1 : undefined}
-              onClick={event => handlePageClick(event, Math.min(totalPages, currentPage + 1), currentPage === totalPages)}
+              nativeButton={false}
+              render={(
+                <Link
+                  href={getPageHref(Math.min(totalPages, currentPage + 1))}
+                  scroll
+                  aria-label="下一页"
+                  aria-disabled={currentPage === totalPages}
+                  tabIndex={currentPage === totalPages ? -1 : undefined}
+                />
+              )}
             >
-              <ChevronRightIcon className="size-4" aria-hidden="true" />
-            </PaginationLink>
+              <RiArrowRightSLine className="size-4" aria-hidden="true" />
+            </Button>
           </PaginationItem>
         </PaginationContent>
       </Pagination>
