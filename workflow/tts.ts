@@ -266,31 +266,6 @@ async function unGenericTTS(text: string, gender: string, env: Env, providerName
   return createAudioBlob(audio)
 }
 
-async function localTTS(text: string, gender: string, env: Env) {
-  if (!env.TTS_API_URL) {
-    throw new Error('TTS_API_URL is required for local TTS provider')
-  }
-
-  const result = await $fetch(env.TTS_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': env.TTS_API_KEY ? `Bearer ${env.TTS_API_KEY}` : '',
-    },
-    timeout: 60000,
-    body: {
-      text,
-      gender,
-      voice_id: gender === '男' ? env.MAN_VOICE_ID : env.WOMAN_VOICE_ID,
-      model: env.TTS_MODEL,
-      speed: env.AUDIO_SPEED,
-    },
-  })
-
-  const buffer = await result.arrayBuffer()
-  return new Blob([buffer], { type: 'audio/mpeg' })
-}
-
 export default function (text: string, gender: string, env: Env) {
   const provider = env.TTS_PROVIDER?.toLowerCase()
   console.info('TTS_PROVIDER', env.TTS_PROVIDER)
@@ -299,7 +274,6 @@ export default function (text: string, gender: string, env: Env) {
       return minimaxTTS(text, gender, env)
     case 'murf':
       return murfTTS(text, gender, env)
-<<<<<<< HEAD
     case 'alibaba':
     case 'aliyun':
       return unAlibabaCloudTTS(text, gender, env)
@@ -315,10 +289,6 @@ export default function (text: string, gender: string, env: Env) {
     case 'openai':
     case 'volcano':
       return unGenericTTS(text, gender, env, provider)
-=======
-    case 'local':
-      return localTTS(text, gender, env)
->>>>>>> d47e86e (feat: support multi-locale push API and rich metadata for Murenji)
     default:
       return edgeTTS(text, gender, env)
   }
