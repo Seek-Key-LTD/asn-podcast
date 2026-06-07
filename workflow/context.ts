@@ -20,6 +20,9 @@ export interface Env extends CloudflareEnv {
   BROWSER: Fetcher
   AI: Ai
   VECTORIZE_KUNPENGZHI: VectorizeIndex
+  QSTASH_URL?: string
+  QSTASH_TOKEN?: string
+  QSTASH_TTS_URL?: string
 }
 
 export interface WorkflowContext {

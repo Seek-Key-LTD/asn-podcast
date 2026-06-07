@@ -172,21 +172,44 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
     }
   }
 
+  const ttsQueueUrl = (
+    ctx.env.QSTASH_URL || 'https://qstash-us-east-1.upstash.io'
+  ) + '/v1/publish/' + (
+    ctx.env.QSTASH_TTS_URL || `${ctx.env.HACKER_PODCAST_WORKER_URL}/api/tts`
+  )
+  const ttsQueueToken = ctx.env.QSTASH_TOKEN || ''
+
   for (const { text, gender, lineIndex: index } of merged) {
     await step.do(stepNames.audioSegment(index), { ...retryConfig, timeout: '5 minutes' }, async () => {
-      console.info('create conversation audio', text.slice(0, 50))
-      const audio = await synthesize(text, gender, ctx.env)
+      console.info('queue TTS segment', index, text.slice(0, 50))
 
-      if (!audio.size) {
-        throw new Error('podcast audio size is 0')
+      const response = await fetch(ttsQueueUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${ttsQueueToken}`,
+          'Content-Type': 'application/json',
+          'Upstash-Sync': 'true',
+        },
+        body: JSON.stringify({
+          text,
+          gender,
+          instanceId: event.instanceId,
+          podcastKey,
+          segmentIndex: index,
+        }),
+      })
+
+      if (!response.ok) {
+        const body = await response.text()
+        throw new Error(`QStash TTS failed for segment ${index}: ${response.status} ${body}`)
       }
 
-      const audioKey = `tmp/${event.instanceId}/${podcastKey}-${index}.mp3`
-      const audioUrl = `${ctx.env.HACKER_PODCAST_R2_BUCKET_URL}/${audioKey}`
+      const result = await response.json<{ success: boolean, audioUrl?: string }>()
+      if (!result.success) {
+        throw new Error(`TTS handler returned error for segment ${index}`)
+      }
 
-      await ctx.env.HACKER_PODCAST_R2.put(audioKey, audio)
-      await ctx.env.HACKER_PODCAST_KV.put(`tmp:${event.instanceId}:audio:${index}`, audioUrl, { expirationTtl: 3600 })
-      return audioUrl
+      return result.audioUrl
     })
   }
 
