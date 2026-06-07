@@ -136,29 +136,54 @@ async function omniTTS(text: string, gender: string, env: Env) {
   const speed = parseAudioSpeed(env.AUDIO_SPEED) ?? 1.0
   const steps = Number(env.TTS_MODEL) || 32
 
-  const genderParam = gender === '男' ? 'Male / 男' : 'Female / 女'
+  const voiceId = gender === '男' ? env.MAN_VOICE_ID : env.WOMAN_VOICE_ID
+  const isCloneMode = !!(voiceId && (voiceId.includes('.') || voiceId.includes('/')))
 
-  const payload = {
-    data: [
-      text,
-      'Auto', // language
-      steps,  // steps
-      2.0,    // CFG (guidance_scale)
-      true,   // denoise
-      speed,  // speed
-      null,   // duration
-      true,   // preprocess_prompt
-      true,   // postprocess_output
-      genderParam,
-      'Auto', // age
-      'Auto', // pitch
-      'Auto', // style
-      'Auto', // accent
-      'Auto', // dialect
-    ]
+  let endpoint = `${baseURL}/gradio_api/api/_design_fn`
+  let payload: any
+
+  if (isCloneMode) {
+    endpoint = `${baseURL}/gradio_api/api/_clone_fn`
+    payload = {
+      data: [
+        text,
+        'Auto',
+        { path: voiceId }, // ref_audio
+        null,              // ref_text
+        null,              // instruct
+        steps,
+        2.0,
+        true,
+        speed,
+        null,
+        true,
+        true,
+      ]
+    }
+  } else {
+    const genderParam = gender === '男' ? 'Male / 男' : 'Female / 女'
+    payload = {
+      data: [
+        text,
+        'Auto',
+        steps,
+        2.0,
+        true,
+        speed,
+        null,
+        true,
+        true,
+        genderParam,
+        'Auto',
+        'Auto',
+        'Auto',
+        'Auto',
+        'Auto',
+      ]
+    }
   }
 
-  const result = await $fetch<{ data: [ { path: string } ] }>(`${baseURL}/gradio_api/api/_design_fn`, {
+  const result = await $fetch<{ data: [ { path: string } ] }>(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
