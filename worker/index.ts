@@ -73,7 +73,7 @@ export default {
     }
 
     // 4. 重定向到主应用
-    return Response.redirect(`https://hacker-podcast.agi.li${pathname}`, 302)
+    return Response.redirect(`${pathname}`, 302)
   },
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     return this.runWorkflow(event, env, ctx)
