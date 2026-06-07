@@ -42,6 +42,8 @@ next-env.d.ts
 # wrangler
 .wrangler
 
+# env
+.env
 # dev.vars
 .dev.vars
 .claude/

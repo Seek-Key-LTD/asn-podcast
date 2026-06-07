@@ -1,13 +1,14 @@
 import type { WorkflowEvent, WorkflowStep, WorkflowStepConfig } from 'cloudflare:workers'
 import type { AudioResult, Env, GeneratedContents, Params, WorkflowContext } from './context'
 import { generateText } from 'ai'
+import { z } from 'zod'
 import { WorkflowEntrypoint } from 'cloudflare:workers'
 import { podcastTitle } from '@/config'
 import { buildContext } from './context'
 import { stepNames } from './names'
 import { introPrompt, summarizeBlogPrompt, summarizePodcastPrompt, summarizeStoryPrompt } from './prompt'
 import synthesize from './tts'
-import { concatAudioFiles, getHackerNewsStory, getHackerNewsTopStories } from './utils'
+import { concatAudioFiles, getHackerNewsStory, getHackerNewsTopStories, searchWithSearXNG } from './utils'
 
 const retryConfig: WorkflowStepConfig = {
   retries: {
@@ -72,6 +73,19 @@ async function processStories(stories: Story[], step: WorkflowStep, ctx: Workflo
 }
 
 async function generateContents(allStories: string[], stories: Story[], step: WorkflowStep, ctx: WorkflowContext): Promise<GeneratedContents> {
+  const tools = ctx.env.SEARXNG_URL ? {
+    search: {
+      description: 'Search for additional information or context if library content is insufficient or unconfirmed.',
+      parameters: z.object({
+        query: z.string().describe('The search query'),
+      }),
+      execute: async ({ query }: { query: string }) => {
+        const results = await searchWithSearXNG(query, ctx.env.SEARXNG_URL!);
+        return JSON.stringify(results.slice(0, 5));
+      },
+    },
+  } : undefined;
+
   const podcastContent = await step.do(stepNames.generatePodcastScript, retryConfig, async () => {
     const { text, usage, finishReason } = await generateText({
       model: ctx.openai(ctx.env.OPENAI_THINKING_MODEL || ctx.env.OPENAI_MODEL),
@@ -79,6 +93,8 @@ async function generateContents(allStories: string[], stories: Story[], step: Wo
       prompt: allStories.join('\n\n---\n\n'),
       maxOutputTokens: ctx.maxTokens,
       maxRetries: 3,
+      tools,
+      maxSteps: tools ? 5 : 1,
     })
 
     console.info(`create hacker podcast content success`, { text, usage, finishReason })
@@ -97,6 +113,8 @@ async function generateContents(allStories: string[], stories: Story[], step: Wo
       prompt: `<stories>${JSON.stringify(stories)}</stories>\n\n---\n\n${allStories.join('\n\n---\n\n')}`,
       maxOutputTokens: ctx.maxTokens,
       maxRetries: 3,
+      tools,
+      maxSteps: tools ? 5 : 1,
     })
 
     console.info(`create hacker daily blog content success`, { text, usage, finishReason })
@@ -200,19 +218,21 @@ async function saveContent(contentKey: string, podcastKey: string, stories: Stor
   console.info('save content to kv success')
 }
 
-async function cleanupTempData(stories: Story[], conversations: string[], podcastKey: string, step: WorkflowStep, ctx: WorkflowContext, event: WorkflowEvent<Params>): Promise<void> {
+async function cleanupTempData(stories: Story[], conversations: string[], podcastKey: string, step: WorkflowStep, ctx: WorkflowContext, event: Params): Promise<void> {
+  // Use a fallback for event.instanceId if not present (though it should be in real workflow)
+  const instanceId = (event as any).instanceId || 'manual';
   await step.do(stepNames.cleanupTemporaryData, retryConfig, async () => {
     const deletePromises = []
 
     // Clean up story temporary data
     for (const story of stories) {
-      const storyKey = `tmp:${event.instanceId}:story:${story.id}`
+      const storyKey = `tmp:${instanceId}:story:${story.id}`
       deletePromises.push(ctx.env.HACKER_PODCAST_KV.delete(storyKey))
     }
 
     // Clean up audio temporary data
     for (const [index] of conversations.entries()) {
-      const audioKey = `tmp:${event.instanceId}:audio:${index}`
+      const audioKey = `tmp:${instanceId}:audio:${index}`
       deletePromises.push(ctx.env.HACKER_PODCAST_KV.delete(audioKey))
     }
 
@@ -222,7 +242,7 @@ async function cleanupTempData(stories: Story[], conversations: string[], podcas
       conversations.map(async (_, index) => {
         try {
           await Promise.any([
-            ctx.env.HACKER_PODCAST_R2.delete(`tmp/${event.instanceId}/${podcastKey}-${index}.mp3`),
+            ctx.env.HACKER_PODCAST_R2.delete(`tmp/${instanceId}/${podcastKey}-${index}.mp3`),
             new Promise(resolve => setTimeout(resolve, 200)),
           ])
         }

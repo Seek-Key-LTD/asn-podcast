@@ -30,6 +30,12 @@
     ]
   },
   "keep_vars": true,
+  "vars": {
+    "TTS_PROVIDER": "omni",
+    "TTS_API_URL": "https://colab-locks-gradio.git4ta.fun",
+    "MAN_VOICE_ID": "/content/drive/MyDrive/voice/OmniVoice/Design_Voice/design_male.mp3",
+    "WOMAN_VOICE_ID": "/content/drive/MyDrive/voice/OmniVoice/Design_Voice/design_female.mp3"
+  },
   "browser": {
     "binding": "BROWSER"
   },

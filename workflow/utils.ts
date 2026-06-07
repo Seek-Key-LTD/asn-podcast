@@ -10,19 +10,7 @@ interface ContentSelector {
 interface ContentKeys {
   JINA_KEY?: string
   FIRECRAWL_KEY?: string
-}
-
-interface FirecrawlResult {
-  success: boolean
-  data: Record<string, string>
-}
-
-function getErrorData(error: unknown): unknown {
-  if (typeof error === 'object' && error && 'data' in error) {
-    return error.data
-  }
-
-  return undefined
+  SEARXNG_URL?: string
 }
 
 function xmlBlock(tag: string, content: string): string {
@@ -33,135 +21,68 @@ ${content}
 `
 }
 
-async function getContentFromJina(url: string, format: 'html' | 'markdown', selector?: ContentSelector, JINA_KEY?: string): Promise<string> {
-  const jinaHeaders: HeadersInit = {
-    'X-Retain-Images': 'none',
-    'X-Return-Format': format,
-  }
-
-  if (JINA_KEY) {
-    jinaHeaders.Authorization = `Bearer ${JINA_KEY}`
-  }
-
-  if (selector?.include) {
-    jinaHeaders['X-Target-Selector'] = selector.include
-  }
-
-  if (selector?.exclude) {
-    jinaHeaders['X-Remove-Selector'] = selector.exclude
-  }
-
-  console.info('get content from jina', url)
-  const content = await $fetch<string>(`https://r.jina.ai/${url}`, {
-    headers: jinaHeaders,
-    timeout: 30000,
-    parseResponse: txt => txt,
-  })
-  return content
-}
-
-async function getContentFromFirecrawl(url: string, format: 'html' | 'markdown', selector?: ContentSelector, FIRECRAWL_KEY?: string): Promise<string> {
-  if (!FIRECRAWL_KEY) {
-    return ''
-  }
-
-  const firecrawlHeaders: HeadersInit = {
-    Authorization: `Bearer ${FIRECRAWL_KEY}`,
-  }
-
+/**
+ * 使用 SearXNG 进行搜索
+ */
+export async function searchWithSearXNG(query: string, searxngUrl: string): Promise<any[]> {
+  console.info('searching with searxng:', query)
   try {
-    console.info('get content from firecrawl', url)
-    const result = await $fetch<FirecrawlResult>('https://api.firecrawl.dev/v2/scrape', {
-      method: 'POST',
-      headers: firecrawlHeaders,
-      timeout: 30000,
-      body: {
-        url,
-        formats: [format],
-        onlyMainContent: true,
-        includeTags: selector?.include ? [selector.include] : undefined,
-        excludeTags: selector?.exclude ? [selector.exclude] : undefined,
-      },
-    })
-    if (result.success) {
-      return result.data[format] || ''
-    }
-    else {
-      console.error(`get content from firecrawl failed: ${url} ${result}`)
-      return ''
-    }
-  }
-  catch (error) {
-    console.error(`get content from firecrawl failed: ${url} ${error}`, getErrorData(error))
-    return ''
+    const url = `${searxngUrl}/search?q=${encodeURIComponent(query)}&format=json`
+    const response = await $fetch<any>(url)
+    return response.results || []
+  } catch (error) {
+    console.error('searxng search failed:', error)
+    return []
   }
 }
 
-async function getContent(url: string, format: 'html' | 'markdown', selector: ContentSelector, { JINA_KEY, FIRECRAWL_KEY }: ContentKeys): Promise<string> {
-  if (FIRECRAWL_KEY) {
-    const content = await getContentFromFirecrawl(url, format, selector, FIRECRAWL_KEY)
-    if (content) {
-      return content
-    }
-  }
-
-  return getContentFromJina(url, format, selector, JINA_KEY)
-}
-
-function parseHackerNewsStories(html: string): Story[] {
-  const $ = cheerio.load(html)
-  const items = $('.athing.submission')
-
+/**
+ * 从 Hugo RSS 提取内容
+ * @param rssUrl RSS 地址
+ */
+export async function getLibraryStories(rssUrl: string): Promise<Story[]> {
+  console.info('fetching library stories from rss', rssUrl)
+  const xml = await $fetch<string>(rssUrl, { parseResponse: txt => txt })
+  const $ = cheerio.load(xml, { xmlMode: true })
+  
   const stories: Story[] = []
-  items.each((_, el) => {
-    const id = $(el).attr('id')
-    const url = $(el).find('.titleline > a').attr('href')
-    if (!id || !url) {
-      return
-    }
-
+  $('item').each((_, el) => {
+    const title = $(el).find('title').text()
+    const link = $(el).find('link').text()
+    const description = $(el).find('description').text()
+    
     stories.push({
-      id,
-      title: $(el).find('.titleline > a').text(),
-      url,
-      hackerNewsUrl: `https://news.ycombinator.com/item?id=${id}`,
+      id: link,
+      title: title,
+      url: link,
+      hackerNewsUrl: link, // 复用此字段作为原始链接
+      content: description, // 缓存内容
     })
   })
-
+  
   return stories
 }
 
-export async function getHackerNewsTopStories(today: string, { JINA_KEY, FIRECRAWL_KEY }: ContentKeys): Promise<Story[]> {
-  const url = `https://news.ycombinator.com/front?day=${today}`
-
-  if (FIRECRAWL_KEY) {
-    const firecrawlHtml = await getContentFromFirecrawl(url, 'html', {}, FIRECRAWL_KEY)
-    if (firecrawlHtml) {
-      const firecrawlStories = parseHackerNewsStories(firecrawlHtml)
-      if (firecrawlStories.length > 0) {
-        return firecrawlStories
-      }
-
-      console.error('getHackerNewsTopStories from Firecrawl parsed no stories')
-    }
-  }
-
-  const html = await getContentFromJina(url, 'html', {}, JINA_KEY)
-  return parseHackerNewsStories(html)
-}
-
-export async function getHackerNewsStory(story: Story, maxTokens: number, { JINA_KEY, FIRECRAWL_KEY }: ContentKeys): Promise<string> {
-  const [article, comments] = await Promise.all([
-    getContent(story.url!, 'markdown', {}, { JINA_KEY, FIRECRAWL_KEY }),
-    getContent(`https://news.ycombinator.com/item?id=${story.id}`, 'markdown', { include: '.comment-tree', exclude: '.navs' }, { JINA_KEY, FIRECRAWL_KEY }),
-  ])
+export async function getLibraryStory(story: Story): Promise<string> {
+  const content = story.content || ''
+  const cleanContent = cheerio.load(content).text().trim()
+  
   const blocks = [
     story.title ? xmlBlock('title', story.title) : '',
-    article ? xmlBlock('article', article.substring(0, maxTokens * 5)) : '',
-    comments ? xmlBlock('comments', comments.substring(0, maxTokens * 5)) : '',
+    cleanContent ? xmlBlock('article', cleanContent) : '',
   ]
 
   return blocks.filter(Boolean).join('\n\n---\n\n')
+}
+
+// 保持兼容性的 Hacker News 函数
+export async function getHackerNewsTopStories(today: string, env: { JINA_KEY?: string }): Promise<Story[]> {
+  const rssUrl = 'https://github.seekkey.tech/index.xml'
+  return getLibraryStories(rssUrl)
+}
+
+export async function getHackerNewsStory(story: Story, maxTokens: number, env: { JINA_KEY?: string }): Promise<string> {
+  return getLibraryStory(story)
 }
 
 export async function concatAudioFiles(audioFiles: string[], BROWSER: Fetcher, { workerUrl }: { workerUrl: string }): Promise<Blob> {
@@ -172,7 +93,6 @@ export async function concatAudioFiles(audioFiles: string[], BROWSER: Fetcher, {
 
     console.info('start concat audio files', audioFiles)
     const fileUrl = await page.evaluate(async (audioFiles) => {
-      // 此处 JS 运行在浏览器中
       // @ts-expect-error 浏览器内的对象
       const blob = await concatAudioFilesOnBrowser(audioFiles)
 
