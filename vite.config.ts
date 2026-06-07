@@ -5,12 +5,15 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
+  server: {
+    allowedHosts: ['colab-locks-podcast.git4ta.fun', 'all'],
+  },
   plugins: [
     tailwindcss(),
     vinext(),
     cloudflare({
       viteEnvironment: { name: 'rsc', childEnvironments: ['ssr'] },
-      remoteBindings: true,
+      remoteBindings: false,
     }),
   ],
   resolve: {
