@@ -1,62 +1,64 @@
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "asn-podcast",
-	"account_id": "e167cb36a5b95cb3cc8daf77a3f7d0b3",
-	"main": "vinext/server/app-router-entry",
-	"upload_source_maps": true,
-	"compatibility_date": "2026-02-12",
-	"compatibility_flags": [
-		"nodejs_compat"
-	],
-	"assets": {
-		"not_found_handling": "none"
-	},
-	"observability": {
-		"traces": {
-			"enabled": true
-		},
-		"logs": {
-			"enabled": true
-		}
-	},
-	"placement": {
-		"mode": "smart"
-	},
-	"keep_vars": true,
-	"kv_namespaces": [
-		{
-			"binding": "HACKER_PODCAST_KV",
-			"id": "6a50d6f93dcc467a8552f889cd238da1",
-			"remote": false
-		}
-	],
-	"r2_buckets": [
-		{
-			"binding": "HACKER_PODCAST_R2",
-			"bucket_name": "hacker-podcast",
-			"remote": false
-		}
-	],
-	"migrations": [
-		{
-			"tag": "open-next",
-			"new_sqlite_classes": [
-				"DOQueueHandler",
-				"DOShardedTagCache",
-				"BucketCachePurge"
-			]
-		},
-		{
-			"tag": "vinext-remove-do",
-			"deleted_classes": [
-				"DOQueueHandler",
-				"DOShardedTagCache",
-				"BucketCachePurge"
-			]
-		}
-	]
+        "$schema": "node_modules/wrangler/config-schema.json",
+        "name": "asn-podcast",
+        "account_id": "e167cb36a5b95cb3cc8daf77a3f7d0b3",
+        "main": "vinext/server/app-router-entry",
+        "upload_source_maps": true,
+        "compatibility_date": "2026-02-12",
+        "compatibility_flags": [
+                "nodejs_compat"
+        ],
+        "assets": {
+                "not_found_handling": "none"
+        },
+        "observability": {
+                "traces": {
+                        "enabled": true
+                },
+                "logs": {
+                        "enabled": true
+                }
+        },
+        "placement": {
+                "mode": "smart"
+        },
+        "keep_vars": true,
+        "routes": [
+                {
+                        "pattern": "podcast.capitaltrain.cn/*",
+                        "custom_domain": true
+                }
+        ],
+        "kv_namespaces": [
+                {
+                        "binding": "HACKER_PODCAST_KV",
+                        "id": "6a50d6f93dcc467a8552f889cd238da1",
+                        "remote": false
+                }
+        ],
+        "r2_buckets": [
+                {
+                        "binding": "HACKER_PODCAST_R2",
+                        "bucket_name": "hacker-podcast",
+                        "remote": false
+                }
+        ],
+        "migrations": [
+                {
+                        "tag": "open-next",
+                        "new_sqlite_classes": [
+                                "DOQueueHandler",
+                                "DOShardedTagCache",
+                                "BucketCachePurge"
+                        ]
+                },
+                {
+                        "tag": "vinext-remove-do",
+                        "deleted_classes": [
+                                "DOQueueHandler",
+                                "DOShardedTagCache",
+                                "BucketCachePurge"
+                        ]
+                }
+        ]
 }

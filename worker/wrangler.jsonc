@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
-  "name": "asn-podcast-worker",
+  "name": "asn-podcast-backend",
   "account_id": "e167cb36a5b95cb3cc8daf77a3f7d0b3",
   "main": "./index.ts",
   "minify": true,
@@ -35,6 +35,9 @@
     ]
   },
   "keep_vars": true,
+  "limits": {
+    "subrequests": 200
+  },
   "vars": {
     "TTS_PROVIDER": "omni",
     "TTS_API_URL": "https://colab-locks-gradio.git4ta.fun",
@@ -44,7 +47,7 @@
     "OPENAI_API_KEY": "freellmapi-7304d343a34f8e4d2b7d4c7e33348fcc5ceca361f8cc422f",
     "OPENAI_MODEL": "auto",
     "SEARXNG_URL": "https://searx.seekkey.eu.org",
-    "HACKER_PODCAST_WORKER_URL": "https://asn-podcast-worker.seekkey.workers.dev",
+    "HACKER_PODCAST_WORKER_URL": "https://podcast.capitaltrain.cn/api/worker",
     "HACKER_PODCAST_R2_BUCKET_URL": "https://podcast-r2.git4ta.fun",
     "NODE_ENV": "development"
   },
