@@ -18,6 +18,8 @@ export interface Env extends CloudflareEnv {
   HACKER_PODCAST_R2_BUCKET_URL: string
   HACKER_PODCAST_WORKFLOW: Workflow
   BROWSER: Fetcher
+  AI: Ai
+  VECTORIZE_KUNPENGZHI: VectorizeIndex
 }
 
 export interface WorkflowContext {

@@ -31,14 +31,14 @@
 		{
 			"binding": "HACKER_PODCAST_KV",
 			"id": "6a50d6f93dcc467a8552f889cd238da1",
-			"remote": true
+			"remote": false
 		}
 	],
 	"r2_buckets": [
 		{
 			"binding": "HACKER_PODCAST_R2",
 			"bucket_name": "hacker-podcast",
-			"remote": true
+			"remote": false
 		}
 	],
 	"migrations": [

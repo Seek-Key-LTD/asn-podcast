@@ -85,6 +85,28 @@ export async function getHackerNewsStory(story: Story, maxTokens: number, env: {
   return getLibraryStory(story)
 }
 
+export async function queryRAG(query: string, env: Env): Promise<string> {
+  try {
+    const embRes = await env.AI.run('@cf/baai/bge-m3', { text: [query] })
+    const vector = (embRes as any).data[0]
+    const matches = await env.VECTORIZE_KUNPENGZHI.query(vector, {
+      topK: 8,
+      returnMetadata: false,
+      returnValues: false,
+    })
+
+    const results = matches.matches || []
+    if (!results.length) return ''
+
+    return results
+      .map((m, i) => `[参考 ${i + 1}] (相关度: ${m.score.toFixed(2)})\n${m.metadata?.book ? `来源: ${m.metadata.book}` : ''}`)
+      .join('\n\n')
+  } catch (error) {
+    console.error('RAG query failed:', error)
+    return ''
+  }
+}
+
 export async function concatAudioFiles(audioFiles: string[], BROWSER: Fetcher, { workerUrl }: { workerUrl: string }): Promise<Blob> {
   const browser = await puppeteer.launch(BROWSER)
   try {

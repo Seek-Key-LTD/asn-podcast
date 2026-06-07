@@ -18,6 +18,7 @@ export const stepNames = {
     return `synthesize audio segment ${index + 1}`
   },
   collectStorySummaries: 'collect story summaries',
+  ragLookup: 'query knowledge base for context',
   generatePodcastScript: 'generate podcast script',
   pauseAfterPodcastScript: 'sleep after podcast script',
   generateBlogArticle: 'generate blog article',

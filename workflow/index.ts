@@ -8,7 +8,7 @@ import { buildContext } from './context'
 import { stepNames } from './names'
 import { introPrompt, summarizeBlogPrompt, summarizePodcastPrompt, summarizeStoryPrompt } from './prompt'
 import synthesize from './tts'
-import { concatAudioFiles, getHackerNewsStory, getHackerNewsTopStories, searchWithSearXNG } from './utils'
+import { concatAudioFiles, getHackerNewsStory, getHackerNewsTopStories, queryRAG, searchWithSearXNG } from './utils'
 
 const retryConfig: WorkflowStepConfig = {
   retries: {
@@ -86,10 +86,21 @@ async function generateContents(allStories: string[], stories: Story[], step: Wo
     },
   } : undefined;
 
+  const ragContext = await step.do(stepNames.ragLookup, retryConfig, async () => {
+    const queries = allStories.join('\n')
+    const context = await queryRAG(queries, ctx.env)
+    console.info('RAG context', context ? `found ${context.length} chars` : 'empty')
+    return context || ''
+  })
+
+  const podcastSystemPrompt = ragContext
+    ? `${summarizePodcastPrompt}\n\n## 参考知识库\n以下是鲲鹏志书库中与本日内容相关的背景资料，请融入对话中自然使用，不要直接引用：\n\n${ragContext}`
+    : summarizePodcastPrompt
+
   const podcastContent = await step.do(stepNames.generatePodcastScript, retryConfig, async () => {
     const { text, usage, finishReason } = await generateText({
       model: ctx.openai(ctx.env.OPENAI_THINKING_MODEL || ctx.env.OPENAI_MODEL),
-      system: summarizePodcastPrompt,
+      system: podcastSystemPrompt,
       prompt: allStories.join('\n\n---\n\n'),
       maxOutputTokens: ctx.maxTokens,
       maxRetries: 3,
