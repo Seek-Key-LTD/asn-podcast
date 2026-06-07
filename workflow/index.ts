@@ -156,42 +156,43 @@ async function generateContents(allStories: string[], stories: Story[], step: Wo
 async function processAudio(podcastContent: string, podcastKey: string, step: WorkflowStep, ctx: WorkflowContext, event: WorkflowEvent<Params>): Promise<AudioResult> {
   const conversations = podcastContent.split('\n').filter(Boolean)
 
-  // Batch consecutive lines to stay under subrequest limit (50/worker invocation)
-  // Each batch runs in one step.do which has its own subrequest pool
-  const BATCH_SIZE = 2
-  for (let batchStart = 0; batchStart < conversations.length; batchStart += BATCH_SIZE) {
-    const batch = conversations.slice(batchStart, batchStart + BATCH_SIZE)
-    await step.do(stepNames.audioSegment(batchStart), { ...retryConfig, timeout: '5 minutes' }, async () => {
-      for (const [offset, conversation] of batch.entries()) {
-        const index = batchStart + offset
-        if (
-          !(conversation.startsWith('男') || conversation.startsWith('女'))
-          || !conversation.substring(2).trim()
-        ) {
-          console.warn('conversation is not valid', conversation)
-          continue
-        }
+  // Group consecutive same-speaker lines so each TTS call handles more text
+  // This reduces total TTS calls → fewer subrequests → stays under 50 limit
+  const merged: { text: string, gender: string, lineIndex: number }[] = []
+  for (const conversation of conversations) {
+    const gender = conversation[0]
+    const content = conversation.substring(2).trim()
+    if (!(gender === '男' || gender === '女') || !content) continue
+    const last = merged[merged.length - 1]
+    if (last && last.gender === gender) {
+      // Merge with previous same-speaker segment (remove speaker prefix for following lines)
+      last.text += '\n' + content
+    } else {
+      merged.push({ text: content, gender, lineIndex: merged.length })
+    }
+  }
 
-        console.info('create conversation audio', conversation)
-        const audio = await synthesize(conversation.substring(2), conversation[0], ctx.env)
+  for (const { text, gender, lineIndex: index } of merged) {
+    await step.do(stepNames.audioSegment(index), { ...retryConfig, timeout: '5 minutes' }, async () => {
+      console.info('create conversation audio', text.slice(0, 50))
+      const audio = await synthesize(text, gender, ctx.env)
 
-        if (!audio.size) {
-          throw new Error('podcast audio size is 0')
-        }
-
-        const audioKey = `tmp/${event.instanceId}/${podcastKey}-${index}.mp3`
-        const audioUrl = `${ctx.env.HACKER_PODCAST_WORKER_URL}/static/${audioKey}`
-
-        await ctx.env.HACKER_PODCAST_R2.put(audioKey, audio)
-
-        await ctx.env.HACKER_PODCAST_KV.put(`tmp:${event.instanceId}:audio:${index}`, audioUrl, { expirationTtl: 3600 })
+      if (!audio.size) {
+        throw new Error('podcast audio size is 0')
       }
+
+      const audioKey = `tmp/${event.instanceId}/${podcastKey}-${index}.mp3`
+      const audioUrl = `${ctx.env.HACKER_PODCAST_R2_BUCKET_URL}/${audioKey}`
+
+      await ctx.env.HACKER_PODCAST_R2.put(audioKey, audio)
+      await ctx.env.HACKER_PODCAST_KV.put(`tmp:${event.instanceId}:audio:${index}`, audioUrl, { expirationTtl: 3600 })
+      return audioUrl
     })
   }
 
   const audioFiles = await step.do(stepNames.collectAudioSegments, retryConfig, async () => {
     const audioUrls = await Promise.all(
-      conversations.map((_, index) => ctx.env.HACKER_PODCAST_KV.get(`tmp:${event.instanceId}:audio:${index}`)),
+      merged.map((_, index) => ctx.env.HACKER_PODCAST_KV.get(`tmp:${event.instanceId}:audio:${index}`)),
     )
     return audioUrls.filter((audioUrl): audioUrl is string => Boolean(audioUrl))
   })
@@ -205,7 +206,7 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
     const blob = await concatAudioFiles(audioFiles, ctx.env.BROWSER, { workerUrl: ctx.env.HACKER_PODCAST_WORKER_URL })
     await ctx.env.HACKER_PODCAST_R2.put(podcastKey, blob)
 
-    const podcastAudioUrl = `${ctx.env.HACKER_PODCAST_WORKER_URL}/static/${podcastKey}`
+    const podcastAudioUrl = `${ctx.env.HACKER_PODCAST_R2_BUCKET_URL}/${podcastKey}`
     console.info('podcast audio url', podcastAudioUrl)
     return blob.size
   })
