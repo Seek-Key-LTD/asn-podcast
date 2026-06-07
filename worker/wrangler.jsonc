@@ -45,12 +45,13 @@
     "OPENAI_MODEL": "auto",
     "SEARXNG_URL": "https://searx.seekkey.eu.org",
     "HACKER_PODCAST_WORKER_URL": "https://podcast.capitaltrain.cn/api/worker",
-    "HACKER_PODCAST_R2_BUCKET_URL": "https://podcast.git4ta.fun",
+    "HACKER_PODCAST_R2_BUCKET_URL": "https://podcast-r2.git4ta.fun",
     "NODE_ENV": "development",
-    "QSTASH_URL": "https://qstash-us-east-1.upstash.io",
+    "QSTASH_URL": "https://qstash.upstash.io",
     "QSTASH_TOKEN": "eyJVc2VySUQiOiIzMTA5YTJmNy04NmRjLTRiOWYtOWM3ZS0xMzVhMGI4ODNiMmMiLCJQYXNzd29yZCI6IjM4ZGMyNDI1NTQ0MzQwNzliZTRiMmU3Mzk5NzUxYzI0In0=",
     "QSTASH_CURRENT_SIGNING_KEY": "sig_4ku8tCoMLBM2Qn1RFmBgEKLT9rom",
-    "QSTASH_NEXT_SIGNING_KEY": "sig_87j6Ln2A4S6vmTcuPFm9D6RhCKaD"
+    "QSTASH_NEXT_SIGNING_KEY": "sig_87j6Ln2A4S6vmTcuPFm9D6RhCKaD",
+    "QSTASH_TTS_URL": "https://asn-podcast-backend.seekkey.workers.dev/api/tts"
   },
   "browser": {
     "binding": "BROWSER"

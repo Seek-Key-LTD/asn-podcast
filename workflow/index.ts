@@ -173,8 +173,8 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
   }
 
   const ttsQueueUrl = (
-    ctx.env.QSTASH_URL || 'https://qstash-us-east-1.upstash.io'
-  ) + '/v1/publish/' + (
+    ctx.env.QSTASH_URL || 'https://qstash.upstash.io'
+  ) + '/v2/publish/' + encodeURIComponent(
     ctx.env.QSTASH_TTS_URL || `${ctx.env.HACKER_PODCAST_WORKER_URL}/api/tts`
   )
   const ttsQueueToken = ctx.env.QSTASH_TOKEN || ''
@@ -204,7 +204,13 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
         throw new Error(`QStash TTS failed for segment ${index}: ${response.status} ${body}`)
       }
 
-      const result = await response.json<{ success: boolean, audioUrl?: string }>()
+      const bodyText = await response.text()
+      let result: { success: boolean, audioUrl?: string }
+      try {
+        result = JSON.parse(bodyText)
+      } catch {
+        throw new Error(`QStash TTS non-JSON response for segment ${index}: ${response.status} ${bodyText.slice(0, 200)}`)
+      }
       if (!result.success) {
         throw new Error(`TTS handler returned error for segment ${index}`)
       }
