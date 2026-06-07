@@ -232,7 +232,8 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
       return
     }
 
-    const blob = await concatAudioFiles(audioFiles, ctx.env.BROWSER, { workerUrl: ctx.env.HACKER_PODCAST_WORKER_URL })
+    const audioPageUrl = ctx.env.HACKER_PODCAST_WORKER_DEPLOY_URL || ctx.env.HACKER_PODCAST_WORKER_URL
+    const blob = await concatAudioFiles(audioFiles, ctx.env.BROWSER, { workerUrl: audioPageUrl })
     await ctx.env.HACKER_PODCAST_R2.put(podcastKey, blob)
 
     const podcastAudioUrl = `${ctx.env.HACKER_PODCAST_R2_BUCKET_URL}/${podcastKey}`

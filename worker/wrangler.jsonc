@@ -51,7 +51,8 @@
     "QSTASH_TOKEN": "eyJVc2VySUQiOiIzMTA5YTJmNy04NmRjLTRiOWYtOWM3ZS0xMzVhMGI4ODNiMmMiLCJQYXNzd29yZCI6IjM4ZGMyNDI1NTQ0MzQwNzliZTRiMmU3Mzk5NzUxYzI0In0=",
     "QSTASH_CURRENT_SIGNING_KEY": "sig_4ku8tCoMLBM2Qn1RFmBgEKLT9rom",
     "QSTASH_NEXT_SIGNING_KEY": "sig_87j6Ln2A4S6vmTcuPFm9D6RhCKaD",
-    "QSTASH_TTS_URL": "https://asn-podcast-backend.seekkey.workers.dev/api/tts"
+    "QSTASH_TTS_URL": "https://asn-podcast-backend.seekkey.workers.dev/api/tts",
+    "HACKER_PODCAST_WORKER_DEPLOY_URL": "https://asn-podcast-backend.seekkey.workers.dev"
   },
   "browser": {
     "binding": "BROWSER"

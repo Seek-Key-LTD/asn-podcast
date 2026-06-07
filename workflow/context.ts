@@ -23,6 +23,7 @@ export interface Env extends CloudflareEnv {
   QSTASH_URL?: string
   QSTASH_TOKEN?: string
   QSTASH_TTS_URL?: string
+  HACKER_PODCAST_WORKER_DEPLOY_URL?: string
 }
 
 export interface WorkflowContext {

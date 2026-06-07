@@ -8,6 +8,7 @@ interface Env extends CloudflareEnv {
   HACKER_PODCAST_R2_BUCKET_URL: string
   QSTASH_URL?: string
   QSTASH_TOKEN?: string
+  HACKER_PODCAST_WORKER_DEPLOY_URL?: string
 }
 
 export default {
