@@ -1,7 +1,7 @@
 'use client'
 
 import type { Episode } from '@/types/podcast'
-import { useSelector } from '@tanstack/react-store'
+import { useStore } from '@tanstack/react-store'
 import { useEffect, useId } from 'react'
 import { Waveform } from '@/components/common/waveform'
 import { EpisodeItem } from '@/components/episodes/episode-item'
@@ -19,8 +19,8 @@ interface EpisodeListProps {
 
 export function EpisodeList({ episodes, currentPage, totalEpisodes }: EpisodeListProps) {
   const pageStore = getPageStore()
-  const isNavigating = useSelector(pageStore, state => state.isNavigating)
-  const pendingPage = useSelector(pageStore, state => state.pendingPage)
+  const isNavigating = useStore(pageStore, state => state.isNavigating)
+  const pendingPage = useStore(pageStore, state => state.pendingPage)
 
   useEffect(() => {
     completePageNavigation(currentPage)

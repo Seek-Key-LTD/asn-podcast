@@ -1,6 +1,7 @@
 import puppeteer from '@cloudflare/puppeteer'
 import * as cheerio from 'cheerio'
 import { $fetch } from 'ofetch'
+import type { Env } from './context'
 
 interface ContentSelector {
   include?: string
@@ -91,7 +92,7 @@ export async function queryRAG(query: string, env: Env): Promise<string> {
     const vector = (embRes as any).data[0]
     const matches = await env.VECTORIZE_KUNPENGZHI.query(vector, {
       topK: 8,
-      returnMetadata: false,
+      returnMetadata: true,
       returnValues: false,
     })
 
@@ -99,8 +100,9 @@ export async function queryRAG(query: string, env: Env): Promise<string> {
     if (!results.length) return ''
 
     return results
-      .map((m, i) => `[参考 ${i + 1}] (相关度: ${m.score.toFixed(2)})\n${m.metadata?.book ? `来源: ${m.metadata.book}` : ''}`)
-      .join('\n\n')
+      .filter(m => m.metadata?.text)
+      .map((m, i) => `[知识库参考 ${i + 1}] (相关度: ${m.score.toFixed(2)})\n${m.metadata!.text as string}`)
+      .join('\n\n---\n\n')
   } catch (error) {
     console.error('RAG query failed:', error)
     return ''

@@ -1,12 +1,12 @@
 'use client'
 
 import type { Theme } from '@/stores/theme-store'
-import { useSelector } from '@tanstack/react-store'
+import { useStore } from '@tanstack/react-store'
 import { getThemeStore } from '@/stores/theme-store'
 
 export function useTheme() {
   const themeStore = getThemeStore()
-  const theme = useSelector(themeStore, state => state.theme)
+  const theme = useStore(themeStore, state => state.theme)
 
   const setTheme = (newTheme: Theme) => {
     try {

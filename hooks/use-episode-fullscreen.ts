@@ -1,6 +1,6 @@
 'use client'
 
-import { useSelector } from '@tanstack/react-store'
+import { useStore } from '@tanstack/react-store'
 import { useEffect } from 'react'
 import { getUIStore, setEpisodeFullscreen, toggleEpisodeFullscreen } from '@/stores/ui-store'
 
@@ -11,7 +11,7 @@ interface UseEpisodeFullscreenOptions {
 
 export function useEpisodeFullscreen({ manageBodyLock = false, resetOnMount = false }: UseEpisodeFullscreenOptions = {}) {
   const uiStore = getUIStore()
-  const isFullscreen = useSelector(uiStore, state => state.isEpisodeFullscreen)
+  const isFullscreen = useStore(uiStore, state => state.isEpisodeFullscreen)
 
   useEffect(() => {
     if (!resetOnMount)

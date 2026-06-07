@@ -1,6 +1,6 @@
 'use client'
 
-import { useSelector } from '@tanstack/react-store'
+import { useStore } from '@tanstack/react-store'
 import { Controls } from '@vidstack/react'
 import { EpisodeTitle } from '@/components/player/episode-title'
 import { Play } from '@/components/player/play'
@@ -14,7 +14,7 @@ import { getPlayerStore } from '@/stores/player-store'
 
 export function PlayerLayout() {
   const playerStore = getPlayerStore()
-  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
+  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
 
   return (
     <Controls.Root

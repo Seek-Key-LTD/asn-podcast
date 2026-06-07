@@ -4,7 +4,7 @@ import type { Components } from 'react-markdown'
 
 import type { Episode } from '@/types/podcast'
 import { RiArrowLeftSLine, RiPauseFill, RiPlayFill } from '@remixicon/react'
-import { useSelector } from '@tanstack/react-store'
+import { useStore } from '@tanstack/react-store'
 import { useRouter } from 'next/navigation'
 import { useEffect, useId, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -93,8 +93,8 @@ function EpisodeDetailContent({ episode, markdownComponents }: EpisodeDetailCont
   const publishedDateLabel = formatZhCnUtcDate(episode.published)
   const headlineId = useId()
   const playerStore = getPlayerStore()
-  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
-  const isPlaying = useSelector(playerStore, state => state.isPlaying)
+  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
+  const isPlaying = useStore(playerStore, state => state.isPlaying)
   const { isFullscreen } = useEpisodeFullscreen({ manageBodyLock: true, resetOnMount: true })
 
   const isCurrentEpisodePlaying = currentEpisode?.id === episode.id && isPlaying

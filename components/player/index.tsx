@@ -1,6 +1,6 @@
 'use client'
 
-import { useSelector } from '@tanstack/react-store'
+import { useStore } from '@tanstack/react-store'
 import {
   MediaPlayer,
 
@@ -16,8 +16,8 @@ import { getPlayerStore, pause, play, setIsPlaying, setIsSourceChanging } from '
 function PlayerContent() {
   const player = useMediaPlayer()
   const playerStore = getPlayerStore()
-  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
-  const isPlaying = useSelector(playerStore, state => state.isPlaying)
+  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
+  const isPlaying = useStore(playerStore, state => state.isPlaying)
 
   useEffect(() => {
     if (!player)
@@ -85,8 +85,8 @@ function PlayerContent() {
 
 export function Player() {
   const playerStore = getPlayerStore()
-  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
-  const isPlaying = useSelector(playerStore, state => state.isPlaying)
+  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
+  const isPlaying = useStore(playerStore, state => state.isPlaying)
   const { isFullscreen: isEpisodeFullscreen } = useEpisodeFullscreen()
   const hasPlayer = currentEpisode !== null
   const shouldShowPlayer = hasPlayer && !isEpisodeFullscreen

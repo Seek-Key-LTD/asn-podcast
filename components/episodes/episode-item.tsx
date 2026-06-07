@@ -2,7 +2,7 @@
 
 import type { Episode } from '@/types/podcast'
 import { RiPauseFill, RiPlayFill } from '@remixicon/react'
-import { useSelector } from '@tanstack/react-store'
+import { useStore } from '@tanstack/react-store'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -16,8 +16,8 @@ interface EpisodeItemProps {
 
 export function EpisodeItem({ episode }: EpisodeItemProps) {
   const playerStore = getPlayerStore()
-  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
-  const isPlaying = useSelector(playerStore, state => state.isPlaying)
+  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
+  const isPlaying = useStore(playerStore, state => state.isPlaying)
 
   const isCurrentEpisode = currentEpisode?.id === episode.id
   const isCurrentlyPlaying = isCurrentEpisode && isPlaying

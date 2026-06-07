@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useSelector } from '@tanstack/react-store'
+import { useStore } from '@tanstack/react-store'
 import { lazy, Suspense, useSyncExternalStore } from 'react'
 import { ThemeProvider } from '@/components/theme/provider'
 import { initPageStore } from '@/stores/page-store'
@@ -35,7 +35,7 @@ interface ProvidersProps {
 function LazyPlayer() {
   const isHydrated = useSyncExternalStore(subscribeToHydration, getClientSnapshot, getServerSnapshot)
   const playerStore = getPlayerStore()
-  const currentEpisode = useSelector(playerStore, state => state.currentEpisode)
+  const currentEpisode = useStore(playerStore, state => state.currentEpisode)
 
   if (!isHydrated || !currentEpisode) {
     return null
