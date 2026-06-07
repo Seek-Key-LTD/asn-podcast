@@ -35,9 +35,6 @@
     ]
   },
   "keep_vars": true,
-  "limits": {
-    "subrequests": 200
-  },
   "vars": {
     "TTS_PROVIDER": "omni",
     "TTS_API_URL": "https://colab-locks-gradio.git4ta.fun",
