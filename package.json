@@ -19,7 +19,9 @@
     "logs:worker": "wrangler tail --cwd worker",
     "tests": "wrangler dev --cwd tests --remote",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
-    "wrangler": "wrangler"
+    "wrangler": "wrangler",
+    "sync:ssd": "rsync -av --delete --exclude 'node_modules' --exclude '.next' --exclude '.wrangler' /content/drive/MyDrive/voice/asn-podcast/ /content/asn-podcast/",
+    "sync:drive": "rsync -av --delete --exclude 'node_modules' --exclude '.next' --exclude '.wrangler' /content/asn-podcast/ /content/drive/MyDrive/voice/asn-podcast/"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^1.0.29",

@@ -188,3 +188,19 @@ export const revalidate = 600
 3. **构建容错** — TypeScript 错误不会阻断构建，但 `pnpm typecheck` 会报错
 4. **勿修改 `components/ui/`** — 由 shadcn/ui 生成，ESLint 已忽略
 5. **`next.config.mjs` 仍有效** — vinext 读取此文件中的 `rewrites` 配置
+
+## 环境迁移智能体 (Staging Admin)
+
+由于 Colab 的临时磁盘 (SSD) 与 Google Drive (HDD) 存在巨大的 I/O 性能差异，本项目采用“SSD 开发，HDD 备份”的策略。
+
+### 核心任务
+1. **一键迁入 SSD**: 将 Google Drive 中的代码同步到 `/content/asn-podcast`，以获得极致的编译速度。
+2. **一键备份 HDD**: 将 SSD 中的最新改动同步回 Google Drive，防止 Colab 关机导致数据丢失。
+
+### 同步指令
+- `pnpm sync:ssd`   # 从云端硬盘加载到 SSD (初始化环境)
+- `pnpm sync:drive` # 从 SSD 备份到云端硬盘 (关机前必做)
+
+### 协作规范
+- **禁止在 HDD 运行 `pnpm install`**: 磁盘带宽极低，会导致死锁。
+- **自动备份**: 本地 Staging 环境应启动后台脚本，每 5 分钟执行一次 `sync:drive` 或 `git push`。

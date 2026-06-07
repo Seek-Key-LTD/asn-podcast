@@ -3,7 +3,7 @@ import type { Podcast, Site } from '@/types/podcast'
 const defaultTitle = 'ASN on Air'
 const defaultDescription
   = 'Agentic Social Network Now on Podcasting. 探索地质变迁、文明掠夺与地缘政治的深度叙事。同步呈现多智能体协同的内容生态。'
-const defaultBaseUrl = import.meta.env?.NEXT_PUBLIC_BASE_URL ?? 'https://podcast.capitaltrain.cn'
+const defaultBaseUrl = 'https://podcast.capitaltrain.cn'
 
 export const keepDays = 30
 

@@ -45,7 +45,7 @@
     "OPENAI_MODEL": "auto",
     "SEARXNG_URL": "https://searx.seekkey.eu.org",
     "HACKER_PODCAST_WORKER_URL": "https://podcast.capitaltrain.cn/api/worker",
-    "HACKER_PODCAST_R2_BUCKET_URL": "https://podcast-r2.git4ta.fun",
+    "HACKER_PODCAST_R2_BUCKET_URL": "https://podcast.git4ta.fun",
     "NODE_ENV": "development"
   },
   "browser": {

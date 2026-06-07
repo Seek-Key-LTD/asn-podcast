@@ -156,30 +156,36 @@ async function generateContents(allStories: string[], stories: Story[], step: Wo
 async function processAudio(podcastContent: string, podcastKey: string, step: WorkflowStep, ctx: WorkflowContext, event: WorkflowEvent<Params>): Promise<AudioResult> {
   const conversations = podcastContent.split('\n').filter(Boolean)
 
-  for (const [index, conversation] of conversations.entries()) {
-    await step.do(stepNames.audioSegment(index), { ...retryConfig, timeout: '5 minutes' }, async () => {
-      if (
-        !(conversation.startsWith('男') || conversation.startsWith('女'))
-        || !conversation.substring(2).trim()
-      ) {
-        console.warn('conversation is not valid', conversation)
-        return conversation
+  // Batch consecutive lines to stay under subrequest limit (50/worker invocation)
+  // Each batch runs in one step.do which has its own subrequest pool
+  const BATCH_SIZE = 2
+  for (let batchStart = 0; batchStart < conversations.length; batchStart += BATCH_SIZE) {
+    const batch = conversations.slice(batchStart, batchStart + BATCH_SIZE)
+    await step.do(stepNames.audioSegment(batchStart), { ...retryConfig, timeout: '5 minutes' }, async () => {
+      for (const [offset, conversation] of batch.entries()) {
+        const index = batchStart + offset
+        if (
+          !(conversation.startsWith('男') || conversation.startsWith('女'))
+          || !conversation.substring(2).trim()
+        ) {
+          console.warn('conversation is not valid', conversation)
+          continue
+        }
+
+        console.info('create conversation audio', conversation)
+        const audio = await synthesize(conversation.substring(2), conversation[0], ctx.env)
+
+        if (!audio.size) {
+          throw new Error('podcast audio size is 0')
+        }
+
+        const audioKey = `tmp/${event.instanceId}/${podcastKey}-${index}.mp3`
+        const audioUrl = `${ctx.env.HACKER_PODCAST_WORKER_URL}/static/${audioKey}`
+
+        await ctx.env.HACKER_PODCAST_R2.put(audioKey, audio)
+
+        await ctx.env.HACKER_PODCAST_KV.put(`tmp:${event.instanceId}:audio:${index}`, audioUrl, { expirationTtl: 3600 })
       }
-
-      console.info('create conversation audio', conversation)
-      const audio = await synthesize(conversation.substring(2), conversation[0], ctx.env)
-
-      if (!audio.size) {
-        throw new Error('podcast audio size is 0')
-      }
-
-      const audioKey = `tmp/${event.instanceId}/${podcastKey}-${index}.mp3`
-      const audioUrl = `${ctx.env.HACKER_PODCAST_WORKER_URL}/static/${audioKey}`
-
-      await ctx.env.HACKER_PODCAST_R2.put(audioKey, audio)
-
-      await ctx.env.HACKER_PODCAST_KV.put(`tmp:${event.instanceId}:audio:${index}`, audioUrl, { expirationTtl: 3600 })
-      return audioUrl
     })
   }
 
