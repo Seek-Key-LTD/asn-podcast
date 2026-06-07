@@ -174,7 +174,7 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
       }
 
       const audioKey = `tmp/${event.instanceId}/${podcastKey}-${index}.mp3`
-      const audioUrl = `${ctx.env.HACKER_PODCAST_R2_BUCKET_URL}/${audioKey}?t=${Date.now()}`
+      const audioUrl = `${ctx.env.HACKER_PODCAST_WORKER_URL}/static/${audioKey}`
 
       await ctx.env.HACKER_PODCAST_R2.put(audioKey, audio)
 
@@ -199,7 +199,7 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
     const blob = await concatAudioFiles(audioFiles, ctx.env.BROWSER, { workerUrl: ctx.env.HACKER_PODCAST_WORKER_URL })
     await ctx.env.HACKER_PODCAST_R2.put(podcastKey, blob)
 
-    const podcastAudioUrl = `${ctx.env.HACKER_PODCAST_R2_BUCKET_URL}/${podcastKey}?t=${Date.now()}`
+    const podcastAudioUrl = `${ctx.env.HACKER_PODCAST_WORKER_URL}/static/${podcastKey}`
     console.info('podcast audio url', podcastAudioUrl)
     return blob.size
   })

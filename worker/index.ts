@@ -11,7 +11,7 @@ export default {
 
     if (pathname === '/scheduled') {
       const id = await env.HACKER_PODCAST_WORKFLOW.create()
-      return new Response(\`Workflow created: \${id.id}\`)
+      return new Response(`Workflow created: ${id.id}`)
     }
 
     return new Response('ASN Podcast Worker is running. Content is stored in KV/R2.')
