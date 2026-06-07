@@ -131,6 +131,54 @@ async function minimaxTTS(text: string, gender: string, env: Env) {
   throw new Error(`Failed to fetch audio: ${result?.base_resp?.status_msg}`)
 }
 
+async function omniTTS(text: string, gender: string, env: Env) {
+  const baseURL = env.TTS_API_URL || 'http://localhost:7860'
+  const speed = parseAudioSpeed(env.AUDIO_SPEED) ?? 1.0
+  const steps = Number(env.TTS_MODEL) || 32
+
+  const genderParam = gender === '男' ? 'Male / 男' : 'Female / 女'
+
+  const payload = {
+    data: [
+      text,
+      'Auto', // language
+      steps,  // steps
+      2.0,    // CFG (guidance_scale)
+      true,   // denoise
+      speed,  // speed
+      null,   // duration
+      true,   // preprocess_prompt
+      true,   // postprocess_output
+      genderParam,
+      'Auto', // age
+      'Auto', // pitch
+      'Auto', // style
+      'Auto', // accent
+      'Auto', // dialect
+    ]
+  }
+
+  const result = await $fetch<{ data: [ { path: string } ] }>(`${baseURL}/gradio_api/api/_design_fn`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    timeout: 60000,
+    body: payload,
+  })
+
+  const path = result?.data?.[0]?.path
+  if (!path) {
+    throw new Error(`OmniVoice TTS failed: ${JSON.stringify(result)}`)
+  }
+
+  const audioBuffer = await $fetch<ArrayBuffer, 'arrayBuffer'>(`${baseURL}/gradio_api/file=${path}`, {
+    responseType: 'arrayBuffer',
+  })
+
+  return createAudioBlob(audioBuffer)
+}
+
 /**
  * murf.ai 语音合成服务每月$10的免费额度，相对于 minimax 收费，没有预算的用户可以使用
  * 使用 Murf 语音合成服务将文本转换为音频。
@@ -270,6 +318,9 @@ export default function (text: string, gender: string, env: Env) {
   const provider = env.TTS_PROVIDER?.toLowerCase()
   console.info('TTS_PROVIDER', env.TTS_PROVIDER)
   switch (provider) {
+    case 'omni':
+    case 'omnivoice':
+      return omniTTS(text, gender, env)
     case 'minimax':
       return minimaxTTS(text, gender, env)
     case 'murf':
