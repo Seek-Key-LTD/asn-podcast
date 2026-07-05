@@ -56,8 +56,17 @@ export async function GET(request: Request) {
         return post.audioSize
       }
 
-      const audioInfo = await env.HACKER_PODCAST_R2.head(post.audio)
-      return audioInfo?.size
+      if (!post.audio || !/^https?:\/\//.test(post.audio)) {
+        return 0
+      }
+
+      try {
+        const audioInfo = await fetch(post.audio, { method: 'HEAD' })
+        const contentLength = audioInfo.headers.get('content-length')
+        return contentLength ? Number(contentLength) : 0
+      } catch {
+        return 0
+      }
     }),
   )
 

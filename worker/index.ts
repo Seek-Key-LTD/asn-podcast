@@ -5,7 +5,6 @@ interface Env extends CloudflareEnv {
   HACKER_PODCAST_WORKFLOW: Workflow
   BROWSER: Fetcher
   HACKER_PODCAST_WORKER_URL: string
-  HACKER_PODCAST_R2_BUCKET_URL: string
   QSTASH_URL?: string
   QSTASH_TOKEN?: string
   HACKER_PODCAST_WORKER_DEPLOY_URL?: string
@@ -42,9 +41,15 @@ export default {
         }
 
         const audioKey = `tmp/${instanceId}/${podcastKey}-${segmentIndex}.mp3`
-        await env.HACKER_PODCAST_R2.put(audioKey, audio)
-
-        const audioUrl = `${env.HACKER_PODCAST_R2_BUCKET_URL}/${audioKey}`
+        const audioUrl = 'https://cernet-s3.git4ta.fun/' + audioKey
+        const uploadResponse = await fetch(audioUrl, {
+          method: 'PUT',
+          body: audio,
+          headers: { 'Content-Type': 'audio/mpeg' },
+        })
+        if (!uploadResponse.ok) {
+          throw new Error('Upload to OCA failed: ' + uploadResponse.status)
+        }
         await env.HACKER_PODCAST_KV.put(`tmp:${instanceId}:audio:${segmentIndex}`, audioUrl, { expirationTtl: 3600 })
 
         return new Response(JSON.stringify({ success: true, audioUrl }), {
@@ -59,7 +64,7 @@ export default {
       }
     }
 
-    return new Response('ASN Podcast Worker is running. Content is stored in KV/R2.')
+    return new Response('ASN Podcast Worker is running. Content is stored in KV/OCA.')
   },
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {

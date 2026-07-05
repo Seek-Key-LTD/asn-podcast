@@ -45,7 +45,6 @@
     "OPENAI_MODEL": "auto",
     "SEARXNG_URL": "https://searx.seekkey.eu.org",
     "HACKER_PODCAST_WORKER_URL": "https://podcast.capitaltrain.cn/api/worker",
-    "HACKER_PODCAST_R2_BUCKET_URL": "https://podcast-r2.git4ta.fun",
     "NODE_ENV": "development",
     "QSTASH_URL": "https://qstash.upstash.io",
     "QSTASH_TOKEN": "eyJVc2VySUQiOiIzMTA5YTJmNy04NmRjLTRiOWYtOWM3ZS0xMzVhMGI4ODNiMmMiLCJQYXNzd29yZCI6IjM4ZGMyNDI1NTQ0MzQwNzliZTRiMmU3Mzk5NzUxYzI0In0=",
@@ -68,12 +67,6 @@
     {
       "binding": "HACKER_PODCAST_KV",
       "id": "6a50d6f93dcc467a8552f889cd238da1"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "HACKER_PODCAST_R2",
-      "bucket_name": "hacker-podcast"
     }
   ]
 }

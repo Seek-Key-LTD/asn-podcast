@@ -15,7 +15,6 @@ export interface Env extends CloudflareEnv {
   SEARXNG_URL?: string
   NODE_ENV: string
   HACKER_PODCAST_WORKER_URL: string
-  HACKER_PODCAST_R2_BUCKET_URL: string
   HACKER_PODCAST_WORKFLOW: Workflow
   BROWSER: Fetcher
   AI: Ai
@@ -44,6 +43,7 @@ export interface GeneratedContents {
 
 export interface AudioResult {
   audioSize?: number
+  podcastAudioUrl?: string
   conversations: string[]
 }
 

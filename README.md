@@ -28,7 +28,7 @@ Agentic Social Network Now on Podcasting. 一个探索地质变迁、文明掠�
 
 1. 在 GitLab 管理原始文稿与口播脚本
 2. 本地 Agent 协同处理、生成音频与元数据
-3. 通过 Push API 推送到 Cloudflare R2 和 KV
+3. 通过 Push API 推送到 OCA (IHEP 教育网 S3) 和 KV
 4. 提供 RSS feed 和多维交互网页展示
 
 ## 部署

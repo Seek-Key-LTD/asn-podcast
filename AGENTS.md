@@ -12,7 +12,7 @@ Hacker Podcast — 基于 AI 的中文播客生成器，自动抓取 Hacker News
 - **语言**: TypeScript 严格模式 + Zod 运行时验证
 - **样式**: Tailwind CSS 4 + shadcn/ui
 - **状态管理**: `@tanstack/react-store`（stores/ 目录）
-- **基础设施**: Cloudflare Workers / KV / R2 / Workflows / Browser Rendering
+- **基础设施**: Cloudflare Workers / KV / OCA S3 / Workflows / Browser Rendering
 - **包管理**: pnpm 11.0.8
 
 ## 开发命令
@@ -73,7 +73,7 @@ lib/                    # 工具函数
 config.ts               # 应用配置 (播客信息、站点设置)
 vite.config.ts          # Vite + vinext + Cloudflare 插件配置
 next.config.mjs         # vinext 读取的重写规则 (/blog.xml → /rss.xml)
-wrangler.jsonc          # 主应用 Cloudflare 配置 (KV/R2 remote: true)
+wrangler.jsonc          # 主应用 Cloudflare 配置 (KV remote: true)
 worker/wrangler.jsonc   # Worker Cloudflare 配置 (含 cron、Browser Rendering)
 ```
 
@@ -96,7 +96,7 @@ vinext 在 Vite 上重新实现 Next.js API (~94% 覆盖率)，编码时需注�
 - **TTS 提供商**: 默认 Edge TTS，可通过 `TTS_PROVIDER=minimax|murf` 切换
 - **音频合并**: 依赖 Cloudflare Browser Rendering（BROWSER binding），无此 binding 则跳过
 - **KV key 格式**: `content:{env}:hacker-podcast:{date}`（如 `content:production:hacker-podcast:2025-01-01`）
-- **R2 路径格式**: `{date}/{env}/hacker-podcast-{date}.mp3`
+- **音频存储**: OCA S3 (教育网免费存储) via cernet-s3.git4ta.fun proxy
 - **本地 TTS 限制**: Edge TTS 在本地可能卡住，调试时注释掉 TTS 代码
 
 ### Workflow 所需环境变量
@@ -107,7 +107,7 @@ vinext 在 Vite 上重新实现 Next.js API (~94% 覆盖率)，编码时需注�
 | `OPENAI_API_KEY`                             | LLM API Key                         | ✓    |
 | `OPENAI_MODEL`                               | 主模型                              | ✓    |
 | `HACKER_PODCAST_WORKER_URL`                  | Worker 公开 URL                     | ✓    |
-| `HACKER_PODCAST_R2_BUCKET_URL`               | R2 Bucket 公开 URL                  | ✓    |
+| `HACKER_PODCAST_WORKER_URL`                  | Worker URL                          | ✓    |
 | `OPENAI_THINKING_MODEL`                      | 思考模型（可选，用于播客/博客内容） | -    |
 | `OPENAI_MAX_TOKENS`                          | 最大 token 数，默认 4096            | -    |
 | `JINA_KEY`                                   | Jina API Key（文章抓取备用）        | -    |
@@ -176,8 +176,8 @@ catch (error) {
 import { env } from 'cloudflare:workers'
 
 const kv = env.HACKER_PODCAST_KV
-const r2 = env.HACKER_PODCAST_R2
-// ISR 重验证
+const oca = 'https://cernet-s3.git4ta.fun'
+// OCA 存储 via cernet-s3 Worker proxy (WebDAV)
 export const revalidate = 600
 ```
 

@@ -4,7 +4,6 @@
 declare namespace Cloudflare {
 	interface Env {
 		HACKER_PODCAST_KV: KVNamespace;
-		HACKER_PODCAST_R2: R2Bucket;
 		NODE_ENV: string;
 		NEXT_PUBLIC_BASE_URL: string;
 		NEXT_STATIC_HOST: string;

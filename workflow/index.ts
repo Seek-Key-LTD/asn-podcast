@@ -226,27 +226,35 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
     return audioUrls.filter((audioUrl): audioUrl is string => Boolean(audioUrl))
   })
 
-  const audioSize = await step.do(stepNames.mergeAudioSegments, retryConfig, async () => {
+  const { audioSize, podcastAudioUrl } = await step.do(stepNames.mergeAudioSegments, retryConfig, async () => {
     if (!ctx.env.BROWSER) {
       console.warn('browser is not configured, skip concat audio files')
-      return
+      return { size: 0, url: '' }
     }
 
     const audioPageUrl = ctx.env.HACKER_PODCAST_WORKER_DEPLOY_URL || ctx.env.HACKER_PODCAST_WORKER_URL
     const blob = await concatAudioFiles(audioFiles, ctx.env.BROWSER, { workerUrl: audioPageUrl })
-    await ctx.env.HACKER_PODCAST_R2.put(podcastKey, blob)
 
-    const podcastAudioUrl = `${ctx.env.HACKER_PODCAST_R2_BUCKET_URL}/${podcastKey}`
+    const podcastAudioUrl = 'https://cernet-s3.git4ta.fun/' + podcastKey
+    const uploadResponse = await fetch(podcastAudioUrl, {
+      method: 'PUT',
+      body: blob,
+      headers: { 'Content-Type': 'audio/mpeg' },
+    })
+    if (!uploadResponse.ok) {
+      throw new Error('Upload to OCA failed: ' + uploadResponse.status)
+    }
+
     console.info('podcast audio url', podcastAudioUrl)
-    return blob.size
+    return { size: blob.size, url: podcastAudioUrl }
   })
 
-  console.info('save podcast to r2 success')
+  console.info('save podcast to oca success')
 
   return { audioSize, conversations }
 }
 
-async function saveContent(contentKey: string, podcastKey: string, stories: Story[], contents: GeneratedContents, audioSize: number | undefined, step: WorkflowStep, ctx: WorkflowContext): Promise<void> {
+async function saveContent(contentKey: string, podcastKey: string, podcastAudioUrl: string, stories: Story[], contents: GeneratedContents, audioSize: number | undefined, step: WorkflowStep, ctx: WorkflowContext): Promise<void> {
   await step.do(stepNames.saveEpisodeContent, retryConfig, async () => {
     await ctx.env.HACKER_PODCAST_KV.put(contentKey, JSON.stringify({
       date: ctx.today,
@@ -255,7 +263,7 @@ async function saveContent(contentKey: string, podcastKey: string, stories: Stor
       podcastContent: contents.podcastContent,
       blogContent: contents.blogContent,
       introContent: contents.introContent,
-      audio: podcastKey,
+      audio: podcastAudioUrl,
       audioSize,
       updatedAt: Date.now(),
     }))
@@ -290,7 +298,7 @@ async function cleanupTempData(stories: Story[], conversations: string[], podcas
       conversations.map(async (_, index) => {
         try {
           await Promise.any([
-            ctx.env.HACKER_PODCAST_R2.delete(`tmp/${instanceId}/${podcastKey}-${index}.mp3`),
+            fetch('https://cernet-s3.git4ta.fun/tmp/' + instanceId + '/' + podcastKey + '-' + index + '.mp3', { method: 'DELETE' }),
             new Promise(resolve => setTimeout(resolve, 200)),
           ])
         }
@@ -316,9 +324,9 @@ export class HackerNewsWorkflow extends WorkflowEntrypoint<Env, Params> {
     const contents = await generateContents(allStories, stories, step, ctx)
     const contentKey = `content:${ctx.runEnv}:hacker-podcast:${ctx.today}`
     const podcastKey = `${ctx.today.replaceAll('-', '/')}/${ctx.runEnv}/hacker-podcast-${ctx.today}.mp3`
-    const { audioSize, conversations } = await processAudio(contents.podcastContent, podcastKey, step, ctx, event)
+    const { audioSize, podcastAudioUrl } = await processAudio(contents.podcastContent, podcastKey, step, ctx, event)
 
-    await saveContent(contentKey, podcastKey, stories, contents, audioSize, step, ctx)
+    await saveContent(contentKey, podcastKey, podcastAudioUrl, stories, contents, audioSize, step, ctx)
     await cleanupTempData(stories, conversations, podcastKey, step, ctx, event)
   }
 }
