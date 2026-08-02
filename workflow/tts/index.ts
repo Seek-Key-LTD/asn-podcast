@@ -6,6 +6,7 @@ import { edgeTTS } from './edge'
 import { mimoTTS } from './mimo'
 import { minimaxTTS } from './minimax'
 import { murfTTS } from './murf'
+import { omnivoiceTTS } from './omnivoice'
 import {
   unAlibabaCloudTTS,
   unElevenLabsTTS,
@@ -29,6 +30,8 @@ export function synthesize(text: string, gender: Gender, env: Env): Promise<Blob
       return mimoTTS(text, gender, env)
     case 'murf':
       return murfTTS(text, gender, env)
+    case 'omnivoice':
+      return omnivoiceTTS(text, gender, env)
     case 'alibaba':
     case 'aliyun':
       return unAlibabaCloudTTS(text, gender, env)
