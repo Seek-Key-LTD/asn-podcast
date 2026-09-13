@@ -1,52 +1,33 @@
-# ASN on Air
+# ASN on Air (ASN Podcast)
 
-Agentic Social Network Now on Podcasting. 一个探索地质变迁、文明掠夺与地缘政治的深度叙事项目。
+Agentic Social Network Now on Podcasting. 一个探索地质变迁、文明掠夺与地缘政治的深度叙事与播客播放系统。
 
-预览地址: <https://podcast.git4ta.fun>
-
-订阅地址: [RSS](https://podcast.git4ta.fun/rss.xml)
+- **线上播放器**: <https://podcast.git4ta.fun>
+- **RSS 订阅源**: <https://podcast.git4ta.fun/rss.xml>
+- **详细播放器与演播架构**: 详见 [PODCAST_PLAYER.md](./PODCAST_PLAYER.md)
 
 ---
 
-## 主要特性
+## 🎙️ 核心功能与两大模块
 
-- 🤖 基于 Agentic Social Network 的深度内容分发
-- 🎯 多 Agent (Hermes, Picoclaw) 协同视角
-- 🎙️ 本地 TTS (CosyVoice) 高质量语音合成
-- 🌐 多语种、多方言支持 (规划中)
-- 📝 知识图谱与 EPUB 联动
+1. **NotebookLM 深度导读专栏**：
+   - 基于 NotebookLM 对《昆鹏志·讲茶大堂》二十期法医级对账稿件进行自动化研讨与导读播客生成，构建垂直专业学术专栏。
+2. **多角色音频演播系统 (Audio Pipeline)**：
+   - 由 IDP 宝石 Agent 矩阵进行分角色演播，音频批量生成并归档至 **Cloudflare R2 / S3 兼容存储**，通过全球边缘 CDN 直连流式播放。
 
-## 技术栈
+---
 
-- [vinext](https://github.com/cloudflare/vinext) (Vite + React Server Components) 应用框架
-- Cloudflare Workers 部署和运行环境
-- 本地 TTS (CosyVoice) 语音合成
-- GitLab CE 版本控制与 CI/CD
-- Tailwind CSS 4 样式处理
+## 🛠️ 技术栈
 
-## 工作流程
+- **前端与播放器**: [vinext](https://github.com/cloudflare/vinext) (Vite + React Server Components) + Tailwind CSS
+- **边缘运行时**: Cloudflare Workers
+- **媒体存储与 CDN**: Cloudflare R2 / S3-compatible bucket
+- **音频引擎**: NotebookLM Deep-Dive + CosyVoice TTS / OmniVoice
 
-1. 在 GitLab 管理原始文稿与口播脚本
-2. 本地 Agent 协同处理、生成音频与元数据
-3. 通过 Push API 推送到 OCA (IHEP 教育网 S3) 和 KV
-4. 提供 RSS feed 和多维交互网页展示
+---
 
-## 部署
+## 📜 许可证 (License)
 
-项目使用 Cloudflare Workers 部署，详见配置文件 `wrangler.jsonc`。
-
-## 致谢
-
-特别感谢以下开源项目与参考：
-
-- **[Podify](https://github.com/sun0225SUN/podify)** - 播客主题设计灵感
-- **[Hacker Podcast](https://github.com/miantiao-me/hacker-podcast)** - 基础架构参考
-
-## 贡献
-
-欢迎通过 GitLab/GitHub 提交 Issue 和 Pull Request!
-
-## 免责声明
-
-本项目仅供技术探讨与文化研究。
-# Trigger deployment
+- 播放器与工程源码：**GNU General Public License v3.0 (GPL-3.0)**
+- 播客文稿与导读剧本：**Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)**
+- 底层 Agent 运行时 (Key-Agent ADK Go)：**Apache License 2.0**
