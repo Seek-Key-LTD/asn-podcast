@@ -20,6 +20,18 @@ interface Env extends CloudflareEnv {
   MAN_VOICE_ID?: string
   WOMAN_VOICE_ID?: string
   AUDIO_SPEED?: string
+  // OmniVoice
+  OMNIVOICE_API_URL?: string
+  OMNIVOICE_VOICE_AGE?: string
+  OMNIVOICE_VOICE_PITCH?: string
+  OMNIVOICE_VOICE_STYLE?: string
+  OMNIVOICE_ACCENT?: string
+  OMNIVOICE_DIALECT?: string
+  OMNIVOICE_INFER_STEPS?: string
+  OMNIVOICE_CFG_SCALE?: string
+  OMNIVOICE_DENOISE?: string
+  OMNIVOICE_SPEED?: string
+  OMNIVOICE_DURATION?: string
 }
 
 const defaultMicrosoftRegion = 'eastus'
@@ -79,6 +91,57 @@ function createAudioBlob(audio: ArrayBuffer | Uint8Array): Blob {
   const arrayBuffer = new ArrayBuffer(audio.byteLength)
   new Uint8Array(arrayBuffer).set(audio)
   return new Blob([arrayBuffer], { type: 'audio/mpeg' })
+}
+
+const omniVoiceGenderMap: Record<string, string> = {
+  '男': 'Male / 男',
+  '女': 'Female / 女',
+}
+
+async function omnivoiceTTS(text: string, gender: string, env: Env) {
+  const baseUrl = env.OMNIVOICE_API_URL || 'https://colab-locks-gradio.git4ta.fun'
+  const body = {
+    data: [
+      text,
+      'Auto',
+      Number(env.OMNIVOICE_INFER_STEPS) || 25,
+      Number(env.OMNIVOICE_CFG_SCALE) || 4,
+      env.OMNIVOICE_DENOISE !== 'false',
+      Number(env.OMNIVOICE_SPEED) || 1.0,
+      Number(env.OMNIVOICE_DURATION) || 5,
+      true,
+      true,
+      omniVoiceGenderMap[gender] || 'Auto',
+      env.OMNIVOICE_VOICE_AGE || 'Auto',
+      env.OMNIVOICE_VOICE_PITCH || 'Auto',
+      env.OMNIVOICE_VOICE_STYLE || 'Auto',
+      env.OMNIVOICE_ACCENT || 'Auto',
+      env.OMNIVOICE_DIALECT || 'Auto',
+    ],
+  }
+
+  const result = await $fetch<{ data: Array<{ path: string } | string> }>(
+    `${baseUrl}/gradio_api/api/_design_fn`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      timeout: 60000,
+    },
+  )
+
+  const audioPath = result.data?.[0]
+  if (!audioPath) {
+    throw new Error('OmniVoice TTS failed: no audio path in response')
+  }
+
+  const path = typeof audioPath === 'string' ? audioPath : audioPath.path
+  const audio = await $fetch<ArrayBuffer, 'arrayBuffer'>(`${baseUrl}/gradio_api/file=${path}`, {
+    responseType: 'arrayBuffer',
+    timeout: 30000,
+  })
+
+  return new Blob([audio], { type: 'audio/wav' })
 }
 
 async function edgeTTS(text: string, gender: string, env: Env) {
@@ -344,6 +407,8 @@ export default function (text: string, gender: string, env: Env) {
     case 'openai':
     case 'volcano':
       return unGenericTTS(text, gender, env, provider)
+    case 'omnivoice':
+      return omnivoiceTTS(text, gender, env)
     default:
       return edgeTTS(text, gender, env)
   }
