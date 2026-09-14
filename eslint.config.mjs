@@ -31,7 +31,7 @@ export default antfu({
   },
   rules: {
     ...eslintPluginBetterTailwindcss.configs['recommended-warn'].rules,
-    'better-tailwindcss/no-unknown-classes': [
+    'better-tailwindcss/no-unregistered-classes': [
       'warn',
       {
         ignore: projectClassNamePatterns,

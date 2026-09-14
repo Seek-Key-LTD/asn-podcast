@@ -31,7 +31,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Deploy Web App
-        run: pnpm deploy
+        # 必须写 `pnpm run deploy`：裸 `pnpm deploy` 会被 pnpm 的内置 deploy 命令
+        # 截胡，报 ERR_PNPM_NOTHING_TO_DEPLOY，永远部署不到 web app。
+        run: pnpm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           NODE_ENV: production

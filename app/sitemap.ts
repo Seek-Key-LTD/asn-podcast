@@ -1,16 +1,11 @@
-import { keepDays } from '@/config'
+import { listEpisodeDates } from '@/lib/articles'
 import { getBaseUrl } from '@/lib/seo'
-import { getPastDays } from '@/lib/utils'
 
 export const revalidate = 86400
 
 export default async function sitemap() {
   const baseUrl = getBaseUrl()
-  const posts = getPastDays(keepDays).map((day) => {
-    return {
-      date: day,
-    }
-  })
+  const posts = (await listEpisodeDates()).map(date => ({ date }))
 
   return [
     {

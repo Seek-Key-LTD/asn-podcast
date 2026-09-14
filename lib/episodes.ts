@@ -14,6 +14,31 @@ export function buildAudioUrl(staticHost: string, audioPath: string, updatedAt?:
   return appendUpdatedAt(`${normalizedHost}/${cleanedPath}`, updatedAt)
 }
 
+const AUDIO_TYPE_BY_EXTENSION: Record<string, string> = {
+  '.m4a': 'audio/mp4',
+  '.mp4': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.opus': 'audio/ogg',
+  '.flac': 'audio/flac',
+  '.mp3': 'audio/mpeg',
+}
+
+/**
+ * 按扩展名推断音频 MIME 类型。
+ *
+ * 原来这里（以及 RSS enclosure）硬编码 `audio/mpeg`，但归档里存在 m4a/AAC
+ * 等非 MP3 文件。网页播放器不校验该字段，严格的三方播客客户端会校验，
+ * 类型不符可能被拒收。
+ */
+export function inferAudioType(src: string): string {
+  const path = src.split('?')[0]?.toLowerCase() ?? ''
+  const dot = path.lastIndexOf('.')
+  const extension = dot === -1 ? '' : path.slice(dot)
+  return AUDIO_TYPE_BY_EXTENSION[extension] ?? 'audio/mpeg'
+}
+
 function buildReferencesSection(stories?: Story[]): string {
   if (!stories || stories.length === 0) {
     return ''
@@ -61,6 +86,8 @@ export function buildEpisodeFromArticle(
     sections.push(references)
   }
 
+  const audioSrc = buildAudioUrl(staticHost, article.audio, article.updatedAt)
+
   return {
     id: article.date,
     title: article.title,
@@ -68,8 +95,8 @@ export function buildEpisodeFromArticle(
     content: sections.join('\n\n'),
     published: article.date,
     audio: {
-      src: buildAudioUrl(staticHost, article.audio, article.updatedAt),
-      type: 'audio/mpeg',
+      src: audioSrc,
+      type: inferAudioType(audioSrc),
     },
     summary: article.introContent,
     stories: article.stories,

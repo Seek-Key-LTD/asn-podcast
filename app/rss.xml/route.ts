@@ -3,10 +3,13 @@ import markdownit from 'markdown-it'
 import { NextResponse } from 'next/server'
 import { Podcast } from 'podcast'
 import { podcast } from '@/config'
-import { buildAudioUrl } from '@/lib/episodes'
+import { contentKeyPrefix, listEpisodeDates } from '@/lib/articles'
+import { buildAudioUrl, inferAudioType } from '@/lib/episodes'
 import { getBaseUrl } from '@/lib/seo'
 
 const md = markdownit()
+
+const maxFeedItems = 10
 
 export const revalidate = 3600
 
@@ -39,13 +42,13 @@ export async function GET(request: Request) {
   })
 
   const runEnv = env.NODE_ENV || 'production'
-  const indexKey = `index:${runEnv}:locale:${locale}`
-  const episodeDates = await env.HACKER_PODCAST_KV.get(indexKey, 'json') as string[] || []
-  const recentDates = episodeDates.slice(0, 10)
+  const episodeDates = await listEpisodeDates()
+  const recentDates = episodeDates.slice(0, maxFeedItems)
+  const kvPrefix = contentKeyPrefix(runEnv)
 
   const posts = (await Promise.all(
     recentDates.map(async (date) => {
-      const post = await env.HACKER_PODCAST_KV.get(`content:${runEnv}:locale:${locale}:date:${date}`, 'json')
+      const post = await env.HACKER_PODCAST_KV.get(`${kvPrefix}${date}`, 'json')
       return post as unknown as Article
     }),
   )).filter(Boolean)
@@ -64,7 +67,8 @@ export async function GET(request: Request) {
         const audioInfo = await fetch(post.audio, { method: 'HEAD' })
         const contentLength = audioInfo.headers.get('content-length')
         return contentLength ? Number(contentLength) : 0
-      } catch {
+      }
+      catch {
         return 0
       }
     }),
@@ -73,10 +77,10 @@ export async function GET(request: Request) {
   posts.forEach((post, index) => {
     const audioSize = audioSizes[index]
 
-    const links = post.stories
+    const links = (post.stories ?? [])
       .map(s => `<li><a href="${s.hackerNewsUrl || s.url || ''}" title="${s.title || ''}">${s.title || ''}</a></li>`)
       .join('')
-    const linkContent = `<p><b>相关链接：</b></p><ul>${links}</ul>`
+    const linkContent = links ? `<p><b>相关链接：</b></p><ul>${links}</ul>` : ''
     const blogContentHtml = md.render(post.blogContent || '')
     const finalContent = `
       <div>${blogContentHtml}<hr/>${linkContent}</div>
@@ -92,7 +96,7 @@ export async function GET(request: Request) {
       date: new Date(post.updatedAt ?? post.date),
       enclosure: {
         url: buildAudioUrl(env.NEXT_STATIC_HOST, post.audio, post.updatedAt),
-        type: 'audio/mpeg',
+        type: inferAudioType(post.audio),
         size: audioSize,
       },
     })
