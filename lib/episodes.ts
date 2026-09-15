@@ -1,3 +1,4 @@
+import type { EpisodeListRow, EpisodeRow } from '@/lib/db'
 import type { Episode } from '@/types/podcast'
 
 function appendUpdatedAt(url: string, updatedAt?: number): string {
@@ -61,53 +62,96 @@ function buildReferencesSection(stories?: Story[]): string {
   return ['## 参考链接', ...items].join('\n')
 }
 
-export function buildEpisodeFromArticle(
-  article: Article,
+function parseStories(json?: string): Story[] {
+  if (!json)
+    return []
+  try {
+    const parsed = JSON.parse(json)
+    return Array.isArray(parsed) ? parsed as Story[] : []
+  }
+  catch {
+    // 存进库的 JSON 理论上一定合法；真坏了也别让整个页面挂掉
+    return []
+  }
+}
+
+/**
+ * 列表查询故意不投影正文（见 lib/db.ts 的 EpisodeListRow），所以这里要能
+ * 容忍字段缺席——列表页只渲染 summary，不读 content。
+ */
+type RowLike = EpisodeRow | EpisodeListRow
+
+function optionalField(row: RowLike, key: 'blog_content' | 'podcast_content' | 'stories_json'): string {
+  return (row as Partial<EpisodeRow>)[key] ?? ''
+}
+
+export interface BuildEpisodeOptions {
+  /** 系列标题，仅用于列表徽标。 */
+  seriesTitle?: string
+}
+
+/**
+ * `Episode.id` 的语义从「日期」变成了「URL 路径」（slug）——这是本次迁移的
+ * 核心变化：身份不再由日期承担。
+ *
+ * `published` 用 published_at（毫秒）转 ISO 字符串。`lib/date.ts` 的两个格式化
+ * 函数都收 number/string/Date，所以展示层零改动。排序**只**来自 SQL 的
+ * `ORDER BY`，这里不再做二次排序——之前 `.sort((a,b) => a.published < ...)`
+ * 那个二次排序正是 S01E08.5 位置错乱的来源之一。
+ */
+export function buildEpisodeFromRow(
+  row: RowLike,
   staticHost: string | undefined,
+  options: BuildEpisodeOptions = {},
 ): Episode {
+  const blogContent = optionalField(row, 'blog_content')
+  const podcastContent = optionalField(row, 'podcast_content')
+  const stories = parseStories(optionalField(row, 'stories_json'))
+
   const description
-    = article.introContent
-      || article.podcastContent?.split('\n')?.[0]
-      || article.blogContent?.split('\n')?.[0]
-      || article.title
+    = row.intro_content
+      || podcastContent.split('\n')?.[0]
+      || blogContent.split('\n')?.[0]
+      || row.title
 
   const sections: string[] = []
-
-  if (article.blogContent) {
-    sections.push(article.blogContent)
+  if (blogContent) {
+    sections.push(blogContent)
+  }
+  if (podcastContent) {
+    sections.push(`## 播客全文\n\n${podcastContent}`)
   }
 
-  if (article.podcastContent) {
-    sections.push(`## 播客全文\n\n${article.podcastContent}`)
-  }
-
-  const references = buildReferencesSection(article.stories)
+  const references = buildReferencesSection(stories)
   if (references) {
     sections.push(references)
   }
 
-  const audioSrc = buildAudioUrl(staticHost, article.audio, article.updatedAt)
+  const audioSrc = buildAudioUrl(staticHost, row.audio_url, row.updated_at)
 
   return {
-    id: article.date,
-    title: article.title,
+    id: row.slug,
+    title: row.title,
     description,
     content: sections.join('\n\n'),
-    published: article.date,
+    published: new Date(row.published_at).toISOString(),
     audio: {
       src: audioSrc,
       type: inferAudioType(audioSrc),
     },
-    summary: article.introContent,
-    stories: article.stories,
+    summary: row.intro_content,
+    stories,
+    kind: row.kind,
+    episodeNo: row.episode_no ?? undefined,
+    seriesId: row.series_id ?? undefined,
+    seriesTitle: options.seriesTitle,
   }
 }
 
-export function buildEpisodesFromArticles(
-  articles: Article[],
+export function buildEpisodesFromRows(
+  rows: RowLike[],
   staticHost: string | undefined,
+  options: BuildEpisodeOptions = {},
 ): Episode[] {
-  return articles
-    .map(article => buildEpisodeFromArticle(article, staticHost))
-    .sort((a, b) => (a.published < b.published ? 1 : -1))
+  return rows.map(row => buildEpisodeFromRow(row, staticHost, options))
 }

@@ -59,6 +59,7 @@ export interface EpisodeAudio {
 }
 
 export interface Episode {
+  /** URL 路径（slug）。daily 是日期，series 是 `sangeng/s01e04`。 */
   id: string
   title: string
   description: string
@@ -67,4 +68,10 @@ export interface Episode {
   audio: EpisodeAudio
   summary?: string
   stories?: Story[]
+  /** 内容类型。日报与系列剧的排序轴、生命周期都不同（见 lib/db.ts）。 */
+  kind: 'daily' | 'series'
+  /** 系列剧的期次标签，如 'S01E08.5'。日报为 undefined。 */
+  episodeNo?: string
+  seriesId?: string
+  seriesTitle?: string
 }

@@ -1,29 +1,65 @@
 import { env } from 'cloudflare:workers'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { EpisodeDetail } from '@/components/episodes/detail'
 import { PodcastScaffold } from '@/components/podcast/scaffold'
 import { StructuredData } from '@/components/seo/structured-data'
 import { podcast, site } from '@/config'
-import { getArticleByDate } from '@/lib/articles'
+import { EPISODE_DATE_PATTERN, getEpisode, getLegacyTarget, getSeries } from '@/lib/articles'
 import { toIsoDateString } from '@/lib/date'
-import { buildEpisodeFromArticle } from '@/lib/episodes'
+import { buildEpisodeFromRow } from '@/lib/episodes'
 import { cleanMetadataDescription, getAbsoluteUrl } from '@/lib/seo'
 
 export const revalidate = 7200
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ date: string }>
-}) {
-  const { date } = await params
-  const post = await getArticleByDate(date)
+/**
+ * slug 是 catch-all 数组：日报是 `['2026-09-15']`，系列剧是
+ * `['sangeng', 's01e04']`。这样「slug 里能不能带斜杠」变成纯数据问题，
+ * 而且六处 `/episode/${episode.id}` 一行都不用改。
+ */
+interface EpisodePageProps {
+  params: Promise<{ slug: string[] }>
+  searchParams: Promise<{ page?: string }>
+}
 
-  if (!post) {
+/**
+ * 解析路径。迁移前系列剧住在 `/episode/2026-09-14` 这种日期式 URL 上
+ * （已进过 sitemap、发过 feed），靠 `legacy_slug` 列 308 到新 slug。
+ */
+async function resolveEpisode(slugParts: string[]) {
+  const path = slugParts.join('/')
+  const row = await getEpisode(path)
+  if (row) {
+    return { row, series: row.series_id ? await getSeriesBySeriesId(row.series_id) : null }
+  }
+
+  // 只对「单个日期形状的段」做遗留跳转，避免把任意不存在的路径都当旧 URL
+  if (slugParts.length === 1 && EPISODE_DATE_PATTERN.test(slugParts[0]!)) {
+    const target = await getLegacyTarget(slugParts[0]!)
+    if (target) {
+      // permanentRedirect 才是 308。普通 redirect 是 307（临时），
+      // 而这是一次性的永久迁移，307 会让搜索引擎反复回来确认。
+      permanentRedirect(`/episode/${target}`)
+    }
+  }
+
+  return null
+}
+
+/** series_id 形如 'sangeng-s1'，feed_slug 是 'sangeng'。这里只为了拿 feed_slug 拼 JSON-LD 的 @id。 */
+async function getSeriesBySeriesId(seriesId: string) {
+  const feedSlug = seriesId.replace(/-s\d+$/, '')
+  return getSeries(feedSlug)
+}
+
+export async function generateMetadata({ params }: EpisodePageProps) {
+  const { slug } = await params
+  const resolved = await resolveEpisode(slug)
+
+  if (!resolved) {
     return notFound()
   }
 
-  const episode = buildEpisodeFromArticle(post, env.NEXT_STATIC_HOST)
+  const episode = buildEpisodeFromRow(resolved.row, env.NEXT_STATIC_HOST)
   const title = episode.title || site.seo.defaultTitle
   const description = cleanMetadataDescription(episode.description || site.seo.defaultDescription)
   const url = `${podcast.base.link}/episode/${episode.id}`
@@ -59,23 +95,16 @@ export async function generateMetadata({
   }
 }
 
-export default async function PostPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ date: string }>
-  searchParams: Promise<{ page?: string }>
-}) {
-  const [{ date }, pageQuery] = await Promise.all([params, searchParams])
-  const fallbackPage = Number.parseInt(pageQuery.page ?? '1', 10)
+export default async function EpisodePage({ params, searchParams }: EpisodePageProps) {
+  const [{ slug }, pageQuery] = await Promise.all([params, searchParams])
+  const resolved = await resolveEpisode(slug)
 
-  const post = await getArticleByDate(date)
-
-  if (!post) {
+  if (!resolved) {
     return notFound()
   }
 
-  const episode = buildEpisodeFromArticle(post, env.NEXT_STATIC_HOST)
+  const { row, series } = resolved
+  const episode = buildEpisodeFromRow(row, env.NEXT_STATIC_HOST, { seriesTitle: series?.title })
   const title = episode.title || site.seo.defaultTitle
   const podcastInfo = {
     title: podcast.base.title,
@@ -86,9 +115,15 @@ export default async function PostPage({
   const url = `${podcast.base.link}/episode/${episode.id}`
   const description = cleanMetadataDescription(episode.description || site.seo.defaultDescription)
   const publishedDate = toIsoDateString(episode.published)
-  const modifiedDate = toIsoDateString(post.updatedAt ?? episode.published)
+  const modifiedDate = toIsoDateString(row.updated_at)
   const organizationId = `${podcast.base.link}/#organization`
-  const podcastId = `${podcast.base.link}/#podcast`
+
+  // 系列剧集的 partOfSeries 指向该系列自己的 PodcastSeries，而不是全站的；
+  // 否则 Apple/Google 会把每一集都算进同一个只有日报的系列。
+  const seriesPodcastId = series
+    ? `${podcast.base.link}/series/${series.feed_slug}#podcast`
+    : `${podcast.base.link}/#podcast`
+
   const structuredData: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -101,13 +136,13 @@ export default async function PostPage({
       },
       {
         '@type': 'PodcastSeries',
-        '@id': podcastId,
-        'name': podcast.base.title,
-        'description': podcast.base.description,
-        'url': podcast.base.link,
-        'image': getAbsoluteUrl(podcast.base.cover),
+        '@id': seriesPodcastId,
+        'name': series?.title ?? podcast.base.title,
+        'description': series?.description ?? podcast.base.description,
+        'url': series ? `${podcast.base.link}/series/${series.feed_slug}` : podcast.base.link,
+        'image': getAbsoluteUrl(series?.cover ?? podcast.base.cover),
         'inLanguage': 'zh-CN',
-        'webFeed': getAbsoluteUrl('/rss.xml'),
+        'webFeed': getAbsoluteUrl(series ? `/series/${series.feed_slug}/rss.xml` : '/rss.xml'),
         'publisher': {
           '@id': organizationId,
         },
@@ -146,12 +181,19 @@ export default async function PostPage({
           'encodingFormat': episode.audio.type,
         },
         'partOfSeries': {
-          '@id': podcastId,
+          '@id': seriesPodcastId,
         },
+        ...(row.episode_major !== null
+          ? {
+              episodeNumber: row.episode_major,
+              ...(row.season !== null ? { partOfSeason: row.season } : {}),
+            }
+          : {}),
       },
     ],
   }
 
+  const fallbackPage = Number.parseInt(pageQuery.page ?? '1', 10)
   const safePage = Number.isNaN(fallbackPage) ? 1 : Math.max(1, fallbackPage)
   return (
     <PodcastScaffold podcastInfo={podcastInfo}>

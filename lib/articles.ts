@@ -1,55 +1,62 @@
+import type { EpisodeListRow, EpisodeRow, Page, SeriesRow, SeriesWithCounts } from '@/lib/db'
 import { env } from 'cloudflare:workers'
 import { cache } from 'react'
-
-const EPISODE_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+import {
+  getEpisodeBySlug,
+  getSeriesByFeedSlug,
+  listDailyPage,
+  listFeedEpisodes,
+  listSeriesEpisodes,
+  listSeriesForIndex,
+  listSeriesSitemapEntries,
+  listSitemapEntries,
+  resolveLegacySlug,
+} from '@/lib/db'
 
 /**
- * 剧集内容在 KV 中的统一键前缀。
- * 首页列表、单集页、RSS、sitemap 全部走这一套，不要再引入第二套键。
- */
-export function contentKeyPrefix(runEnv: string): string {
-  return `content:${runEnv}:hacker-podcast:`
-}
-
-/**
- * 列出 KV 中实际存在的剧集日期（倒序）。
+ * 读侧的缓存包装层。`lib/db.ts` 只管 SQL，这里只管「按当前环境取数 + 请求内去重」。
  *
- * 早期实现是按「最近 N 天」逐日 get，这会带来两个问题：
- * 1. 超出窗口的旧剧集会凭空消失；
- * 2. 空白天也要发 N 次请求。
- * 改为按前缀 list，只读真实存在的键。
+ * 注意 `cache()` 只做**单次请求内**去重，不是跨请求缓存。扛并发的是各路由的
+ * `export const revalidate`（首页 600s / RSS 3600s / 单集 7200s / sitemap 86400s）。
+ * D1 是单库单线程、查询串行，那几个数字是第一道缓冲，别为了"实时"调小。
  */
-async function listEpisodeDatesUncached(): Promise<string[]> {
-  const runEnv = env.NODE_ENV || 'production'
-  const prefix = contentKeyPrefix(runEnv)
-  const dates: string[] = []
-  let cursor: string | undefined
 
-  for (;;) {
-    const page = await env.HACKER_PODCAST_KV.list({ prefix, cursor })
-    for (const key of page.keys) {
-      const date = key.name.slice(prefix.length)
-      if (EPISODE_DATE_PATTERN.test(date)) {
-        dates.push(date)
-      }
-    }
+/** 日期形状的旧 slug，用来识别需要 308 的遗留路径。 */
+export const EPISODE_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
-    if (page.list_complete) {
-      break
-    }
-
-    cursor = page.cursor
-  }
-
-  return dates.sort((a, b) => (a < b ? 1 : -1))
+function runEnv(): string {
+  return env.NODE_ENV || 'production'
 }
 
-export const listEpisodeDates = cache(listEpisodeDatesUncached)
-
-async function getArticleByDateUncached(date: string): Promise<Article | null> {
-  const runEnv = env.NODE_ENV || 'production'
-  const article = await env.HACKER_PODCAST_KV.get(`${contentKeyPrefix(runEnv)}${date}`, 'json')
-  return article as Article | null
+/**
+ * `HACKER_PODCAST_DB` 在 CloudflareEnv 里是必绑的（两个 wrangler.jsonc 都声明了），
+ * 所以这里不用兜底——真为 undefined 就该直接炸，而不是静默返回空列表。
+ */
+function db(): D1Database {
+  return env.HACKER_PODCAST_DB
 }
 
-export const getArticleByDate = cache(getArticleByDateUncached)
+export const getEpisode = cache((slug: string): Promise<EpisodeRow | null> =>
+  getEpisodeBySlug(db(), runEnv(), slug))
+
+export const getLegacyTarget = cache((legacySlug: string): Promise<string | null> =>
+  resolveLegacySlug(db(), runEnv(), legacySlug))
+
+export const getDailyPage = cache((page: number, pageSize: number): Promise<Page<EpisodeListRow>> =>
+  listDailyPage(db(), runEnv(), page, pageSize))
+
+export const getSeriesIndex = cache((): Promise<SeriesWithCounts[]> =>
+  listSeriesForIndex(db(), runEnv()))
+
+export const getSeries = cache((feedSlug: string): Promise<SeriesRow | null> =>
+  getSeriesByFeedSlug(db(), runEnv(), feedSlug))
+
+export const getSeriesEpisodes = cache((seriesId: string): Promise<EpisodeListRow[]> =>
+  listSeriesEpisodes(db(), runEnv(), seriesId))
+
+export const getFeedEpisodes = cache((kind: 'daily' | 'series', limit: number, seriesId?: string): Promise<EpisodeRow[]> =>
+  listFeedEpisodes(db(), runEnv(), kind, limit, seriesId))
+
+export const getSitemapEpisodes = cache(() => listSitemapEntries(db(), runEnv()))
+
+export const getSitemapSeries = cache(() => listSeriesSitemapEntries(db()))

@@ -2,10 +2,12 @@ import type { PodcastInfo } from '@/types/podcast'
 import { env } from 'cloudflare:workers'
 import { redirect } from 'next/navigation'
 import { Podcast } from '@/components/podcast'
+import { SeriesShelf } from '@/components/podcast/series-shelf'
 import { StructuredData } from '@/components/seo/structured-data'
 import { podcast, site } from '@/config'
-import { contentKeyPrefix, listEpisodeDates } from '@/lib/articles'
-import { buildEpisodesFromArticles } from '@/lib/episodes'
+import { getDailyPage, getSeriesIndex } from '@/lib/articles'
+import { buildEpisodesFromRows } from '@/lib/episodes'
+import { pageHref } from '@/lib/pagination'
 import { getAbsoluteUrl } from '@/lib/seo'
 
 interface PodcastListProps {
@@ -13,30 +15,18 @@ interface PodcastListProps {
 }
 
 export async function PodcastList({ currentPage }: PodcastListProps) {
-  const runEnv = env.NODE_ENV || 'production'
-  const episodeDates = await listEpisodeDates()
-  const totalEpisodes = episodeDates.length
-  const totalPages = Math.max(1, Math.ceil(totalEpisodes / site.pageSize))
-  const safePage = Math.min(Math.max(1, currentPage), totalPages)
+  // 一条 SQL 拿一页 + 总数，替代原来的「KV list 取全部 → slice → 逐条 get」。
+  const page = await getDailyPage(currentPage, site.pageSize)
 
-  if (safePage !== currentPage) {
-    redirect(safePage <= 1 ? '/' : `/page/${safePage}`)
+  // 越界页夹取后重定向。totalPages 由服务端算，客户端不再重复这个公式。
+  if (page.page !== currentPage) {
+    redirect(pageHref(page.page))
   }
 
-  const startIndex = (safePage - 1) * site.pageSize
-  const pageDates = episodeDates.slice(startIndex, startIndex + site.pageSize)
-  const kvPrefix = contentKeyPrefix(runEnv)
+  // 货架只在首页第 1 页出现——分页往后翻时它只是噪音。
+  const series = page.page === 1 ? await getSeriesIndex() : []
 
-  const posts = (
-    await Promise.all(
-      pageDates.map(async (date) => {
-        const post = await env.HACKER_PODCAST_KV.get(`${kvPrefix}${date}`, 'json')
-        return post as unknown as Article
-      }),
-    )
-  ).filter(Boolean)
-
-  const episodes = buildEpisodesFromArticles(posts, env.NEXT_STATIC_HOST)
+  const episodes = buildEpisodesFromRows(page.items, env.NEXT_STATIC_HOST)
 
   const podcastInfo: PodcastInfo = {
     title: podcast.base.title,
@@ -75,10 +65,12 @@ export async function PodcastList({ currentPage }: PodcastListProps) {
       <StructuredData data={structuredData} />
       <Podcast
         episodes={episodes}
-        currentPage={safePage}
-        totalEpisodes={totalEpisodes}
+        currentPage={page.page}
+        totalPages={page.totalPages}
         podcastInfo={podcastInfo}
-      />
+      >
+        <SeriesShelf series={series} />
+      </Podcast>
     </>
   )
 }

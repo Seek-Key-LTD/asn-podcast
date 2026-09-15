@@ -7,17 +7,27 @@ import { Waveform } from '@/components/common/waveform'
 import { EpisodeItem } from '@/components/episodes/episode-item'
 import { EpisodeListSkeleton } from '@/components/episodes/list-skeleton'
 import { EpisodePagination } from '@/components/episodes/pagination'
-import { site } from '@/config'
 import { completePageNavigation, getPageStore } from '@/stores/page-store'
 import { setDefaultEpisode } from '@/stores/player-store'
 
 interface EpisodeListProps {
   episodes: Episode[]
   currentPage: number
-  totalEpisodes: number
+  /** 由服务端算好传下来。客户端不再自己算，避免两端算出不同的页数。 */
+  totalPages: number
+  /** 顶部标题，默认「节目列表」。系列剧专页会传系列名。 */
+  heading?: string
+  /** 列表小标题，默认「最近更新」。系列剧专页传「按期次」。 */
+  listHeading?: string
 }
 
-export function EpisodeList({ episodes, currentPage, totalEpisodes }: EpisodeListProps) {
+export function EpisodeList({
+  episodes,
+  currentPage,
+  totalPages,
+  heading = '节目列表',
+  listHeading = '最近更新',
+}: EpisodeListProps) {
   const pageStore = getPageStore()
   const isNavigating = useStore(pageStore, state => state.isNavigating)
   const pendingPage = useStore(pageStore, state => state.pendingPage)
@@ -35,9 +45,8 @@ export function EpisodeList({ episodes, currentPage, totalEpisodes }: EpisodeLis
 
   const headingId = useId()
   const listHeadingId = useId()
-  const pageSize = site.pageSize
-  const totalPages = Math.max(1, Math.ceil(totalEpisodes / pageSize))
   const hasEpisodes = episodes.length > 0
+  const showPagination = totalPages > 1
   const showSkeleton = isNavigating && pendingPage !== null && pendingPage !== currentPage
 
   return (
@@ -64,7 +73,7 @@ export function EpisodeList({ episodes, currentPage, totalEpisodes }: EpisodeLis
               lg:px-20
             `}
           >
-            节目列表
+            {heading}
           </h2>
         </div>
       </header>
@@ -82,7 +91,7 @@ export function EpisodeList({ episodes, currentPage, totalEpisodes }: EpisodeLis
             md:text-xl
           `}
         >
-          最近更新
+          {listHeading}
         </h3>
       </div>
 
@@ -90,7 +99,7 @@ export function EpisodeList({ episodes, currentPage, totalEpisodes }: EpisodeLis
         ? (
             <>
               <EpisodeListSkeleton />
-              <EpisodePagination currentPage={currentPage} totalPages={totalPages} />
+              {showPagination && <EpisodePagination currentPage={currentPage} totalPages={totalPages} />}
             </>
           )
         : !hasEpisodes
@@ -113,7 +122,7 @@ export function EpisodeList({ episodes, currentPage, totalEpisodes }: EpisodeLis
                       <EpisodeItem key={episode.id} episode={episode} />
                     ))}
                   </ul>
-                  <EpisodePagination currentPage={currentPage} totalPages={totalPages} />
+                  {showPagination && <EpisodePagination currentPage={currentPage} totalPages={totalPages} />}
                 </>
               )}
     </section>
