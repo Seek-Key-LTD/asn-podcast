@@ -4,7 +4,7 @@ function appendUpdatedAt(url: string, updatedAt?: number): string {
   return updatedAt ? `${url}?t=${updatedAt}` : url
 }
 
-export function buildAudioUrl(staticHost: string, audioPath: string, updatedAt?: number): string {
+export function buildAudioUrl(staticHost: string | undefined, audioPath: string, updatedAt?: number): string {
   const normalizedHost = staticHost?.replace(/\/$/, '')
   if (/^https?:\/\//.test(audioPath)) {
     return appendUpdatedAt(audioPath, updatedAt)
@@ -63,7 +63,7 @@ function buildReferencesSection(stories?: Story[]): string {
 
 export function buildEpisodeFromArticle(
   article: Article,
-  staticHost: string,
+  staticHost: string | undefined,
 ): Episode {
   const description
     = article.introContent
@@ -105,7 +105,7 @@ export function buildEpisodeFromArticle(
 
 export function buildEpisodesFromArticles(
   articles: Article[],
-  staticHost: string,
+  staticHost: string | undefined,
 ): Episode[] {
   return articles
     .map(article => buildEpisodeFromArticle(article, staticHost))

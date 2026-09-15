@@ -35,5 +35,13 @@
       "id": "6a50d6f93dcc467a8552f889cd238da1",
       "remote": true
     }
+  ],
+  "d1_databases": [
+    {
+      "binding": "HACKER_PODCAST_DB",
+      "database_name": "asn-podcast-db",
+      "database_id": "8f38f8fb-ce4b-4745-966b-2b5193e689d7",
+      "migrations_dir": "migrations"
+    }
   ]
 }
