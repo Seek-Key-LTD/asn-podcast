@@ -1,7 +1,8 @@
-import { getFeedEpisodes, getSeries } from '@/lib/articles'
+import { getFeedEpisodes, getSeries, getSeriesPremieres } from '@/lib/articles'
 import { buildEpisodesFromRows } from '@/lib/episodes'
 import { addEpisodeToFeed, createPodcastFeed, feedResponse } from '@/lib/feed'
 import { getBaseUrl } from '@/lib/seo'
+import { describeUpcomingSeason } from '@/lib/upcoming'
 
 /** 系列剧的独立 feed。与日报 feed 分开，因为两者的生命周期不同（日报会过期、系列剧永久）。 */
 export const revalidate = 3600
@@ -24,9 +25,16 @@ export async function GET(
   const rows = await getFeedEpisodes('series', maxFeedItems, series.id)
   const episodes = buildEpisodesFromRows(rows, undefined, { seriesTitle: series.title })
 
+  // 频道的「即将上线」说明：把尚未开播的季并成一行，放进频道 description。
+  // 不单独做 future item——没音频的条目进 feed 会让客户端显示一条点不开的空剧集。
+  const premieres = await getSeriesPremieres(series.id)
+  const upcomingNote = premieres.length > 0
+    ? `\n\n即将上线：${premieres.map(describeUpcomingSeason).join('、')}`
+    : ''
+
   const feed = createPodcastFeed({
     title: series.title,
-    description: series.description,
+    description: series.description + upcomingNote,
     feedUrl: `${baseUrl}/series/${series.feed_slug}/rss.xml`,
     siteUrl: `${baseUrl}/series/${series.feed_slug}`,
     // Apple 要求封面 ≥1400×1400；series.cover 没配时退回站标（1024×1024，

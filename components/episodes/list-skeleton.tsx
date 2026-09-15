@@ -21,50 +21,50 @@ export function EpisodeListSkeleton({ count = site.pageSize }: EpisodeListSkelet
             lg:px-20
           `}
           >
-            <Skeleton className="
+            <Skeleton className={`
               h-4 w-28 rounded-sm
               md:h-5
-            "
+            `}
             />
             <div className="space-y-3">
-              <Skeleton className="
+              <Skeleton className={`
                 h-6 w-11/12 rounded-sm
                 md:h-8
-              "
+              `}
               />
-              <Skeleton className="
+              <Skeleton className={`
                 h-6 w-2/3 rounded-sm
                 md:h-8
-              "
+              `}
               />
             </div>
             <div className="space-y-2">
-              <Skeleton className="
+              <Skeleton className={`
                 h-6 w-full rounded-sm
                 md:h-7
-              "
+              `}
               />
-              <Skeleton className="
+              <Skeleton className={`
                 h-6 w-4/5 rounded-sm
                 md:h-7
-              "
+              `}
               />
             </div>
             <div className="mt-2 flex items-center gap-3">
-              <Skeleton className="
+              <Skeleton className={`
                 h-4 w-12 rounded-sm
                 md:h-5
-              "
+              `}
               />
-              <Skeleton className="
+              <Skeleton className={`
                 h-4 w-1 rounded-sm
                 md:h-5
-              "
+              `}
               />
-              <Skeleton className="
+              <Skeleton className={`
                 h-4 w-16 rounded-sm
                 md:h-5
-              "
+              `}
               />
             </div>
           </article>

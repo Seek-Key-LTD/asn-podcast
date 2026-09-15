@@ -211,8 +211,7 @@ function EpisodeDetailContent({ episode, markdownComponents }: EpisodeDetailCont
                 transition-[background-color,box-shadow,transform]
                 hover:scale-105 hover:bg-theme-hover hover:shadow-xl
                 hover:shadow-theme/30
-                motion-reduce:transition-none
-                motion-reduce:hover:scale-100
+                motion-reduce:transition-none motion-reduce:hover:scale-100
               `,
               `
                 cursor-pointer

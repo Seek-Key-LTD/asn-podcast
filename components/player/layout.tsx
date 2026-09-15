@@ -23,7 +23,10 @@ export function PlayerLayout() {
           flex w-full flex-col gap-3 px-4 py-3
           md:gap-5 md:px-10 md:py-4
         `,
-        '[--media-menu-y-offset:10px] [--media-tooltip-y-offset:10px]',
+        `
+          [--media-menu-y-offset:10px]
+          [--media-tooltip-y-offset:10px]
+        `,
       )}
     >
       {currentEpisode && (

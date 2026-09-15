@@ -75,6 +75,10 @@ export const getSeriesIndex = cache(async (): Promise<SeriesForShelf[]> => {
 export const getSeries = cache((feedSlug: string): Promise<SeriesRow | null> =>
   getSeriesByFeedSlug(db(), runEnv(), feedSlug))
 
+/** 单个系列的尚未开播季。数据量极小，全取后按 series_id 过滤即可。 */
+export const getSeriesPremieres = cache((seriesId: string): Promise<UpcomingSeason[]> =>
+  listSeasonPremieres(db()).then(all => all.filter(p => p.series_id === seriesId)))
+
 export const getSeriesEpisodes = cache((seriesId: string): Promise<EpisodeListRow[]> =>
   listSeriesEpisodes(db(), runEnv(), seriesId))
 

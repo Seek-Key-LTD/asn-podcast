@@ -1,8 +1,7 @@
 import type { SeriesForShelf } from '@/lib/db'
 import Link from 'next/link'
+import { UpcomingSeasons } from '@/components/podcast/upcoming-seasons'
 import { formatZhCnUtcDate } from '@/lib/date'
-
-const SEASON_CN = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
 
 /**
  * 首页的系列剧货架。
@@ -55,16 +54,7 @@ export function SeriesShelf({ series }: { series: SeriesForShelf[] }) {
                   : '筹备中'}
               </span>
               {item.upcoming.length > 0 && (
-                <span className={`
-                  flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground
-                `}
-                >
-                  {item.upcoming.map(s => (
-                    <span key={s.season}>
-                      {`第${SEASON_CN[s.season] ?? s.season}季 · ${s.premieres_at ? `${s.note ? `${s.note} ` : ''}${formatZhCnUtcDate(s.premieres_at)}` : '日期待定'}`}
-                    </span>
-                  ))}
-                </span>
+                <UpcomingSeasons upcoming={item.upcoming} />
               )}
             </Link>
           </li>
