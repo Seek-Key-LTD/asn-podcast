@@ -12,7 +12,7 @@ Hacker Podcast — 基于 AI 的中文播客生成器，自动抓取 Hacker News
 - **语言**: TypeScript 严格模式 + Zod 运行时验证
 - **样式**: Tailwind CSS 4 + shadcn/ui
 - **状态管理**: `@tanstack/react-store`（stores/ 目录）
-- **基础设施**: Cloudflare Workers / KV / OCA S3 / Workflows / Browser Rendering
+- **基础设施**: Cloudflare Workers / D1 / KV / OCA S3 / Workflows / Browser Rendering
 - **包管理**: pnpm 11.0.8
 
 ## 开发命令
@@ -73,7 +73,9 @@ lib/                    # 工具函数
 config.ts               # 应用配置 (播客信息、站点设置)
 vite.config.ts          # Vite + vinext + Cloudflare 插件配置
 next.config.mjs         # vinext 读取的重写规则 (/blog.xml → /rss.xml)
-wrangler.jsonc          # 主应用 Cloudflare 配置 (KV remote: true)
+wrangler.jsonc          # 主应用 Cloudflare 配置 (KV remote: true, D1 binding)
+worker/wrangler.jsonc   # 同上，写侧 worker 也必须声明同一 D1 binding（否则类型通过、运行时 undefined）
+migrations/             # D1 迁移 SQL，按文件名顺序
 worker/wrangler.jsonc   # Worker Cloudflare 配置 (含 cron、Browser Rendering)
 ```
 
@@ -95,7 +97,13 @@ vinext 在 Vite 上重新实现 Next.js API (~94% 覆盖率)，编码时需注�
 - **TTS 对话格式**: 每行以 `男:` 或 `女:` 开头，workflow 按此切分并选择对应声音
 - **TTS 提供商**: 默认 Edge TTS，可通过 `TTS_PROVIDER=minimax|murf` 切换
 - **音频合并**: 依赖 Cloudflare Browser Rendering（BROWSER binding），无此 binding 则跳过
-- **KV key 格式**: `content:{env}:hacker-podcast:{date}`（如 `content:production:hacker-podcast:2025-01-01`）
+- **剧集目录存 D1**（`asn-podcast-db`），不是 KV。两张表：`series` 与 `episodes`
+  - `episodes` 用 `kind` 列区分两类内容：`daily`（日期即身份，会过期）与 `series`（期次即身份，永久）
+  - 主键是 `(env, slug)`；日期只是 daily 的 slug，系列剧的 slug 是 `{feed_slug}/s01e04`
+  - 系列剧排序用 `season/episode_major/episode_minor` 三列，不依赖字符串字典序
+  - 所有读写走 `lib/db.ts`（唯一 SQL 落点）与 `lib/articles.ts`（带 `cache()` 的读侧包装）
+  - 迁移：`pnpm db:migrate`（远程）/ `pnpm db:migrate:local`；CI 在两次 deploy 之前跑
+- **KV 只留临时数据**: `tmp:{instanceId}:story:*` 与 `tmp:{instanceId}:audio:*`，TTL 3600s
 - **音频存储**: OCA S3 (教育网免费存储) via cernet-s3.git4ta.fun proxy
 - **本地 TTS 限制**: Edge TTS 在本地可能卡住，调试时注释掉 TTS 代码
 
@@ -175,7 +183,8 @@ catch (error) {
 ```typescript
 import { env } from 'cloudflare:workers'
 
-const kv = env.HACKER_PODCAST_KV
+const db = env.HACKER_PODCAST_DB // 剧集目录
+const kv = env.HACKER_PODCAST_KV // 仅 tmp: 临时数据
 const oca = 'https://cernet-s3.git4ta.fun'
 // OCA 存储 via cernet-s3 Worker proxy (WebDAV)
 export const revalidate = 600
@@ -194,13 +203,16 @@ export const revalidate = 600
 由于 Colab 的临时磁盘 (SSD) 与 Google Drive (HDD) 存在巨大的 I/O 性能差异，本项目采用“SSD 开发，HDD 备份”的策略。
 
 ### 核心任务
+
 1. **一键迁入 SSD**: 将 Google Drive 中的代码同步到 `/content/asn-podcast`，以获得极致的编译速度。
 2. **一键备份 HDD**: 将 SSD 中的最新改动同步回 Google Drive，防止 Colab 关机导致数据丢失。
 
 ### 同步指令
-- `pnpm sync:ssd`   # 从云端硬盘加载到 SSD (初始化环境)
+
+- `pnpm sync:ssd` # 从云端硬盘加载到 SSD (初始化环境)
 - `pnpm sync:drive` # 从 SSD 备份到云端硬盘 (关机前必做)
 
 ### 协作规范
+
 - **禁止在 HDD 运行 `pnpm install`**: 磁盘带宽极低，会导致死锁。
 - **自动备份**: 本地 Staging 环境应启动后台脚本，每 5 分钟执行一次 `sync:drive` 或 `git push`。
