@@ -34,7 +34,8 @@ const DB_NAME = 'asn-podcast-db'
 /** 系列标题 → 系列元数据。加新系列时在这里登记一行。 */
 const SERIES_BY_TITLE = {
   '三更道场 · 第一季《寻舵》': {
-    id: 'sangeng-s1',
+    id: 'sangeng',
+    title: '三更道场',
     feedSlug: 'sangeng',
     description: '深夜硬核学术闲聊。十八路主理人用物理第一性原理审计与历史会计复式记账，拆解被文人史学层层包裹的两千年旧账。',
     sortOrder: 0,
@@ -247,7 +248,7 @@ function buildSql(rows, seriesList) {
   for (const s of seriesList) {
     stmts.push(
       `INSERT INTO series (id,title,description,cover,feed_slug,sort_order,created_at,updated_at) VALUES (`
-      + `${sqlStr(s.id)},${sqlStr(s.id === 'sangeng-s1' ? '三更道场 · 第一季《寻舵》' : s.id)},`
+      + `${sqlStr(s.id)},${sqlStr(s.title)},`
       + `${sqlStr(s.description)},NULL,${sqlStr(s.feedSlug)},${sqlNum(s.sortOrder)},${now},${now}) `
       + `ON CONFLICT(id) DO NOTHING`,
     )

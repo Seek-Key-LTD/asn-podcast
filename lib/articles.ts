@@ -1,4 +1,4 @@
-import type { EpisodeListRow, EpisodeRow, Page, SeriesRow, SeriesWithCounts } from '@/lib/db'
+import type { EpisodeListRow, EpisodeRow, Page, SeriesForShelf, SeriesRow, UpcomingSeason } from '@/lib/db'
 import { env } from 'cloudflare:workers'
 import { cache } from 'react'
 import {
@@ -6,6 +6,7 @@ import {
   getSeriesByFeedSlug,
   listDailyPage,
   listFeedEpisodes,
+  listSeasonPremieres,
   listSeriesEpisodes,
   listSeriesForIndex,
   listSeriesSitemapEntries,
@@ -45,8 +46,31 @@ export const getLegacyTarget = cache((legacySlug: string): Promise<string | null
 export const getDailyPage = cache((page: number, pageSize: number): Promise<Page<EpisodeListRow>> =>
   listDailyPage(db(), runEnv(), page, pageSize))
 
-export const getSeriesIndex = cache((): Promise<SeriesWithCounts[]> =>
-  listSeriesForIndex(db(), runEnv()))
+/**
+ * 货架数据：series 统计 + 尚未开播的季。
+ *
+ * 两条查询而不是一条带子查询的 SQL——`season_premieres` 每剧每季才一行，
+ * 全取再在内存里归组比写三层嵌套子查询好读得多，也不会踩到 D1 的查询数上限。
+ */
+export const getSeriesIndex = cache(async (): Promise<SeriesForShelf[]> => {
+  const [series, premieres] = await Promise.all([
+    listSeriesForIndex(db(), runEnv()),
+    listSeasonPremieres(db()),
+  ])
+
+  const bySeriesId = new Map<string, UpcomingSeason[]>()
+  for (const p of premieres) {
+    const list = bySeriesId.get(p.series_id)
+    if (list) {
+      list.push(p)
+    }
+    else {
+      bySeriesId.set(p.series_id, [p])
+    }
+  }
+
+  return series.map(s => ({ ...s, upcoming: bySeriesId.get(s.id) ?? [] }))
+})
 
 export const getSeries = cache((feedSlug: string): Promise<SeriesRow | null> =>
   getSeriesByFeedSlug(db(), runEnv(), feedSlug))

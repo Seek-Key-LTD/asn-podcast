@@ -29,7 +29,9 @@ async function resolveEpisode(slugParts: string[]) {
   const path = slugParts.join('/')
   const row = await getEpisode(path)
   if (row) {
-    return { row, series: row.series_id ? await getSeriesBySeriesId(row.series_id) : null }
+    // series.id 就是 feed_slug（迁移 0002 把 'sangeng-s1' 正名为 'sangeng'），
+    // 所以这里直接查，不再需要从 id 里猜 feed_slug。
+    return { row, series: row.series_id ? await getSeries(row.series_id) : null }
   }
 
   // 只对「单个日期形状的段」做遗留跳转，避免把任意不存在的路径都当旧 URL
@@ -43,12 +45,6 @@ async function resolveEpisode(slugParts: string[]) {
   }
 
   return null
-}
-
-/** series_id 形如 'sangeng-s1'，feed_slug 是 'sangeng'。这里只为了拿 feed_slug 拼 JSON-LD 的 @id。 */
-async function getSeriesBySeriesId(seriesId: string) {
-  const feedSlug = seriesId.replace(/-s\d+$/, '')
-  return getSeries(feedSlug)
 }
 
 export async function generateMetadata({ params }: EpisodePageProps) {

@@ -83,13 +83,20 @@ function parseArgs(argv) {
   const positional = argv.filter(a => !a.startsWith('--'))
   const flags = new Set(argv.filter(a => a.startsWith('--')))
   if (positional.length !== 1) {
-    console.error('用法: node scripts/ingest-episodes.mjs <manifest.json> [--dry-run]')
+    console.error('用法: node scripts/ingest-episodes.mjs <manifest.json> [--dry-run] [--local] [--skip-upload]')
+    console.error('  --local        写本地 D1（配合 --skip-upload 调试时用）')
+    console.error('  --skip-upload  跳过 mc 上传，只写 D1（对象已存在时省一次重传）')
     process.exit(1)
   }
-  return { manifestPath: positional[0], dryRun: flags.has('--dry-run') }
+  return {
+    manifestPath: positional[0],
+    dryRun: flags.has('--dry-run'),
+    useLocal: flags.has('--local'),
+    skipUpload: flags.has('--skip-upload'),
+  }
 }
 
-const { manifestPath, dryRun } = parseArgs(process.argv.slice(2))
+const { manifestPath, dryRun, useLocal, skipUpload } = parseArgs(process.argv.slice(2))
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
 
 const {
@@ -117,11 +124,11 @@ if (!series?.id || !series?.feedSlug || !series?.title) {
 const workDir = mkdtempSync(join(tmpdir(), 'asn-ingest-'))
 const normalizedPrefix = keyPrefix.replace(/^\/|\/$/g, '')
 const normalizedBase = publicBase.replace(/\/$/, '')
-const remoteFlag = '--remote'
+const remoteFlag = useLocal ? '--local' : '--remote'
 
 console.info(`manifest : ${manifestPath}`)
 console.info(`R2       : ${mcAlias}/${bucket}${normalizedPrefix ? `/${normalizedPrefix}` : ''}`)
-console.info(`D1       : ${dbName} (env=${runEnv})`)
+console.info(`D1       : ${dbName} (env=${runEnv}, ${useLocal ? '本地' : '远程'})`)
 console.info(`系列     : ${series.id} (feed_slug=${series.feedSlug})`)
 console.info(`剧集数   : ${episodes.length}${dryRun ? '  (dry-run，不写入)' : ''}\n`)
 
@@ -138,6 +145,27 @@ statements.push(
   + `cover=COALESCE(excluded.cover, series.cover), feed_slug=excluded.feed_slug, sort_order=excluded.sort_order, `
   + `updated_at=excluded.updated_at`,
 )
+
+// 尚未开播的季。和 series 一样是元数据，所以也由 manifest 维护——
+// 放这里而不是只写死在迁移里，是因为全新数据库跑迁移时 series 还是空的，
+// 那时的条件插入不会执行，那些季就永远补不上。
+for (const p of series.premieres ?? []) {
+  if (!Number.isInteger(p.season) || p.season < 1) {
+    console.error(`series.premieres 的 season 必须是 >=1 的整数: ${JSON.stringify(p)}`)
+    process.exit(1)
+  }
+  const at = p.premieresAt ? Date.parse(p.premieresAt) : null
+  if (p.premieresAt && (!Number.isFinite(at) || at < 1e12)) {
+    console.error(`series.premieres 的 premieresAt 必须是带时区的 ISO 字符串: ${JSON.stringify(p)}`)
+    process.exit(1)
+  }
+  statements.push(
+    `INSERT INTO season_premieres (series_id, season, premieres_at, note) VALUES (`
+    + `${sqlStr(series.id)},${sqlNum(p.season)},${sqlNum(at)},${sqlStr(p.note ?? '')}) `
+    + `ON CONFLICT(series_id, season) DO UPDATE SET `
+    + `premieres_at=excluded.premieres_at, note=excluded.note`,
+  )
+}
 
 for (const episode of episodes) {
   const { issue, file, objectKey, title, intro = '', body = '', publishedAt, durationSec, legacySlug = null } = episode
@@ -171,12 +199,14 @@ for (const episode of episodes) {
   console.info(`   远端 : ${remoteKey}  (${contentType})`)
 
   if (dryRun) {
-    console.info(`   [dry-run] mc cp --attr Content-Type=${contentType} …`)
+    console.info(`   [dry-run] ${skipUpload ? '(跳过上传)' : `mc cp --attr Content-Type=${contentType} …`}`)
     console.info(`   [dry-run] D1 upsert ${runEnv}|${slug}\n`)
     continue
   }
 
-  run('mc', ['cp', '--attr', `Content-Type=${contentType}`, file, `${mcAlias}/${bucket}/${remoteKey}`])
+  if (!skipUpload) {
+    run('mc', ['cp', '--attr', `Content-Type=${contentType}`, file, `${mcAlias}/${bucket}/${remoteKey}`])
+  }
 
   statements.push(
     `INSERT INTO episodes (env,slug,kind,date,legacy_slug,series_id,episode_no,season,episode_major,episode_minor,`
@@ -214,7 +244,7 @@ for (const episode of episodes) {
       + `updated_at=excluded.updated_at`,
   )
 
-  console.info(`   ✓ 已上传 R2，D1 upsert 已排队\n`)
+  console.info(`   ✓ ${skipUpload ? '跳过上传' : '已上传 R2'}，D1 upsert 已排队\n`)
 }
 
 if (dryRun) {

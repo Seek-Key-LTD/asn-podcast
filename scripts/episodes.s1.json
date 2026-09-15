@@ -8,10 +8,22 @@
   "dbName": "asn-podcast-db",
   "env": "production",
   "series": {
-    "id": "sangeng-s1",
-    "title": "三更道场 · 第一季《寻舵》",
+    "id": "sangeng",
+    "title": "三更道场",
     "feedSlug": "sangeng",
-    "description": "深夜硬核学术闲聊。十八路主理人用物理第一性原理审计与历史会计复式记账，拆解被文人史学层层包裹的两千年旧账。"
+    "description": "深夜硬核学术闲聊。十八路主理人用物理第一性原理审计与历史会计复式记账，拆解被文人史学层层包裹的两千年旧账。",
+    "premieres": [
+      {
+        "season": 2,
+        "premieresAt": "2026-11-07T09:51:46Z",
+        "note": "立冬"
+      },
+      {
+        "season": 3,
+        "premieresAt": "2027-02-04T00:00:00Z",
+        "note": "立春"
+      }
+    ]
   },
   "episodes": [
     {

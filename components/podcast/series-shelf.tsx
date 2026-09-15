@@ -1,6 +1,8 @@
-import type { SeriesWithCounts } from '@/lib/db'
+import type { SeriesForShelf } from '@/lib/db'
 import Link from 'next/link'
 import { formatZhCnUtcDate } from '@/lib/date'
+
+const SEASON_CN = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
 
 /**
  * 首页的系列剧货架。
@@ -11,7 +13,7 @@ import { formatZhCnUtcDate } from '@/lib/date'
  *
  * 只在首页第 1 页渲染（分页后传 `children` 为 undefined）。
  */
-export function SeriesShelf({ series }: { series: SeriesWithCounts[] }) {
+export function SeriesShelf({ series }: { series: SeriesForShelf[] }) {
   if (series.length === 0)
     return null
 
@@ -48,13 +50,22 @@ export function SeriesShelf({ series }: { series: SeriesWithCounts[] }) {
               <span className="text-base font-semibold text-card-foreground">{item.title}</span>
               <span className="line-clamp-3 text-sm text-muted-foreground">{item.description}</span>
               <span className="mt-auto text-xs text-muted-foreground">
-                {item.episode_count}
-                {' '}
-                集
-                {item.latest_published_at
-                  ? ` · 最近 ${formatZhCnUtcDate(item.latest_published_at)}`
-                  : ''}
+                {item.episode_count > 0
+                  ? `${item.episode_count} 集${item.latest_published_at ? ` · 最近 ${formatZhCnUtcDate(item.latest_published_at)}` : ''}`
+                  : '筹备中'}
               </span>
+              {item.upcoming.length > 0 && (
+                <span className={`
+                  flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground
+                `}
+                >
+                  {item.upcoming.map(s => (
+                    <span key={s.season}>
+                      {`第${SEASON_CN[s.season] ?? s.season}季 · ${s.premieres_at ? `${s.note ? `${s.note} ` : ''}${formatZhCnUtcDate(s.premieres_at)}` : '日期待定'}`}
+                    </span>
+                  ))}
+                </span>
+              )}
             </Link>
           </li>
         ))}

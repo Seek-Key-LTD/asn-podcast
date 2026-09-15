@@ -70,6 +70,20 @@ export interface SeriesWithCounts extends SeriesRow {
   latest_published_at: number | null
 }
 
+export interface UpcomingSeason {
+  series_id: string
+  season: number
+  /** Unix 毫秒；null = 待定。 */
+  premieres_at: number | null
+  /** 日期依据，如「立冬」。 */
+  note: string
+}
+
+/** 货架卡片用的聚合结果：series 行的统计 + 尚未开播的季。 */
+export interface SeriesForShelf extends SeriesWithCounts {
+  upcoming: UpcomingSeason[]
+}
+
 // ---- 列清单 ----------------------------------------------------------------
 
 /** 显式列名而不是 SELECT *：将来加列时不会把大字段悄悄带进 payload。 */
@@ -158,6 +172,15 @@ export async function listSeriesForIndex(db: D1Database, envName: string): Promi
               ORDER BY s.sort_order ASC, latest_published_at DESC`)
     .bind(envName)
     .all<SeriesWithCounts>()
+  return res.results ?? []
+}
+
+/** 所有尚未开播的季。数据量极小（每剧每季一行），一次全取再在内存里归组。 */
+export async function listSeasonPremieres(db: D1Database): Promise<UpcomingSeason[]> {
+  const res = await db
+    .prepare(`SELECT series_id, season, premieres_at, note
+              FROM season_premieres ORDER BY series_id ASC, season ASC`)
+    .all<UpcomingSeason>()
   return res.results ?? []
 }
 
