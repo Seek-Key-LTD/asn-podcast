@@ -4,6 +4,7 @@ import { generateText, stepCountIs } from 'ai'
 import { WorkflowEntrypoint } from 'cloudflare:workers'
 import { z } from 'zod'
 import { podcastTitle } from '@/config'
+import { upsertEpisode } from '@/lib/db'
 import { buildContext } from './context'
 import { stepNames } from './names'
 import { introPrompt, summarizeBlogPrompt, summarizePodcastPrompt, summarizeStoryPrompt } from './prompt'
@@ -259,24 +260,36 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
   return { audioSize, podcastAudioUrl, conversations }
 }
 
-async function saveContent(contentKey: string, podcastKey: string, podcastAudioUrl: string, stories: Story[], contents: GeneratedContents, audioSize: number | undefined, step: WorkflowStep, ctx: WorkflowContext): Promise<void> {
+async function saveContent(podcastAudioUrl: string, stories: Story[], contents: GeneratedContents, audioSize: number | undefined, step: WorkflowStep, ctx: WorkflowContext): Promise<void> {
   await step.do(stepNames.saveEpisodeContent, retryConfig, async () => {
-    await ctx.env.HACKER_PODCAST_KV.put(contentKey, JSON.stringify({
+    // 显式按 UTC 解析。`new Date(ctx.today)` 在非 UTC 环境会漂一天，而日期同时
+    // 是 slug 和 CHECK(slug = date) 的一部分，漂了就写不进去。
+    const publishedAt = Date.parse(`${ctx.today}T00:00:00Z`)
+
+    await upsertEpisode(ctx.env.HACKER_PODCAST_DB, {
+      env: ctx.runEnv,
+      // 日报的 slug 就是日期（CHECK 强制 slug = date）
+      slug: ctx.today,
+      kind: 'daily',
       date: ctx.today,
       title: `${podcastTitle} ${ctx.today}`,
-      stories,
-      podcastContent: contents.podcastContent,
-      blogContent: contents.blogContent,
+      summary: contents.introContent,
       introContent: contents.introContent,
-      audio: podcastAudioUrl,
-      audioSize,
+      blogContent: contents.blogContent,
+      podcastContent: contents.podcastContent,
+      storiesJson: JSON.stringify(stories ?? []),
+      tagsJson: '[]',
+      audioUrl: podcastAudioUrl,
+      audioBytes: audioSize ?? null,
+      durationSec: null,
+      publishedAt,
       updatedAt: Date.now(),
-    }))
+    })
 
     return contents.introContent
   })
 
-  console.info('save content to kv success')
+  console.info('save content to d1 success')
 }
 
 async function cleanupTempData(stories: Story[], conversations: string[], podcastKey: string, step: WorkflowStep, ctx: WorkflowContext, event: WorkflowEvent<Params>): Promise<void> {
@@ -326,11 +339,10 @@ export class HackerNewsWorkflow extends WorkflowEntrypoint<Env, Params> {
 
     const allStories = await processStories(stories, step, ctx, event)
     const contents = await generateContents(allStories, stories, step, ctx)
-    const contentKey = `content:${ctx.runEnv}:hacker-podcast:${ctx.today}`
     const podcastKey = `${ctx.today.replaceAll('-', '/')}/${ctx.runEnv}/hacker-podcast-${ctx.today}.mp3`
     const { audioSize, podcastAudioUrl, conversations } = await processAudio(contents.podcastContent, podcastKey, step, ctx, event)
 
-    await saveContent(contentKey, podcastKey, podcastAudioUrl, stories, contents, audioSize, step, ctx)
+    await saveContent(podcastAudioUrl, stories, contents, audioSize, step, ctx)
     await cleanupTempData(stories, conversations, podcastKey, step, ctx, event)
   }
 }
