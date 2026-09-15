@@ -1,5 +1,6 @@
 {
   "_comment": "asn-podcast 剧集入库清单。用法: node scripts/ingest-episodes.mjs scripts/episodes.s1.json",
+  "_license": "本文件中的 title / intro / body 属播客文稿，按 CC BY-SA 4.0 授权；scripts/ingest-episodes.mjs 属自动化流水线源码，按 GPL-3.0 授权。见 README「许可证」一节。",
   "bucket": "hacker-podcast",
   "mcAlias": "r2",
   "publicBase": "https://podcast-r2.git4ta.fun",
