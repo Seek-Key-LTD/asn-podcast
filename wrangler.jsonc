@@ -25,6 +25,10 @@
   "keep_vars": true,
   "routes": [
     {
+      "pattern": "podcastplayer.git4ta.fun",
+      "custom_domain": true
+    },
+    {
       "pattern": "podcast.capitaltrain.cn",
       "custom_domain": true
     }

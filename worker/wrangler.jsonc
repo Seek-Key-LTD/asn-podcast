@@ -44,7 +44,7 @@
     "OPENAI_API_KEY": "freellmapi-7304d343a34f8e4d2b7d4c7e33348fcc5ceca361f8cc422f",
     "OPENAI_MODEL": "auto",
     "SEARXNG_URL": "https://searx.seekkey.eu.org",
-    "HACKER_PODCAST_WORKER_URL": "https://podcast.capitaltrain.cn/api/worker",
+    "HACKER_PODCAST_WORKER_URL": "https://podcastplayer.git4ta.fun/api/worker",
     "NODE_ENV": "development",
     "QSTASH_URL": "https://qstash.upstash.io",
     "QSTASH_TOKEN": "eyJVc2VySUQiOiIzMTA5YTJmNy04NmRjLTRiOWYtOWM3ZS0xMzVhMGI4ODNiMmMiLCJQYXNzd29yZCI6IjM4ZGMyNDI1NTQ0MzQwNzliZTRiMmU3Mzk5NzUxYzI0In0=",
