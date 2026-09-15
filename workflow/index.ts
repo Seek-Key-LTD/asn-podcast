@@ -1,13 +1,12 @@
 import type { WorkflowEvent, WorkflowStep, WorkflowStepConfig } from 'cloudflare:workers'
 import type { AudioResult, Env, GeneratedContents, Params, WorkflowContext } from './context'
-import { generateText } from 'ai'
-import { z } from 'zod'
+import { generateText, stepCountIs } from 'ai'
 import { WorkflowEntrypoint } from 'cloudflare:workers'
+import { z } from 'zod'
 import { podcastTitle } from '@/config'
 import { buildContext } from './context'
 import { stepNames } from './names'
 import { introPrompt, summarizeBlogPrompt, summarizePodcastPrompt, summarizeStoryPrompt } from './prompt'
-import synthesize from './tts'
 import { concatAudioFiles, getHackerNewsStory, getHackerNewsTopStories, queryRAG, searchWithSearXNG } from './utils'
 
 const retryConfig: WorkflowStepConfig = {
@@ -73,18 +72,22 @@ async function processStories(stories: Story[], step: WorkflowStep, ctx: Workflo
 }
 
 async function generateContents(allStories: string[], stories: Story[], step: WorkflowStep, ctx: WorkflowContext): Promise<GeneratedContents> {
-  const tools = ctx.env.SEARXNG_URL ? {
-    search: {
-      description: 'Search for additional information or context if library content is insufficient or unconfirmed.',
-      parameters: z.object({
-        query: z.string().describe('The search query'),
-      }),
-      execute: async ({ query }: { query: string }) => {
-        const results = await searchWithSearXNG(query, ctx.env.SEARXNG_URL!);
-        return JSON.stringify(results.slice(0, 5));
-      },
-    },
-  } : undefined;
+  const tools = ctx.env.SEARXNG_URL
+    ? {
+        search: {
+          description: 'Search for additional information or context if library content is insufficient or unconfirmed.',
+          // AI SDK v5 把 tool 的 `parameters` 改名为 `inputSchema`；这里仍是旧名会导致
+          // tools 无法赋给 ToolSet，进而让 generateText 的调用整体报类型错。
+          inputSchema: z.object({
+            query: z.string().describe('The search query'),
+          }),
+          execute: async ({ query }: { query: string }) => {
+            const results = await searchWithSearXNG(query, ctx.env.SEARXNG_URL!)
+            return JSON.stringify(results.slice(0, 5))
+          },
+        },
+      }
+    : undefined
 
   const ragContext = await step.do(stepNames.ragLookup, retryConfig, async () => {
     const queries = allStories.join('\n')
@@ -105,7 +108,7 @@ async function generateContents(allStories: string[], stories: Story[], step: Wo
       maxOutputTokens: ctx.maxTokens,
       maxRetries: 3,
       tools,
-      maxSteps: tools ? 5 : 1,
+      stopWhen: stepCountIs(tools ? 5 : 1),
     })
 
     console.info(`create hacker podcast content success`, { text, usage, finishReason })
@@ -125,7 +128,7 @@ async function generateContents(allStories: string[], stories: Story[], step: Wo
       maxOutputTokens: ctx.maxTokens,
       maxRetries: 3,
       tools,
-      maxSteps: tools ? 5 : 1,
+      stopWhen: stepCountIs(tools ? 5 : 1),
     })
 
     console.info(`create hacker daily blog content success`, { text, usage, finishReason })
@@ -162,21 +165,22 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
   for (const conversation of conversations) {
     const gender = conversation[0]
     const content = conversation.substring(2).trim()
-    if (!(gender === '男' || gender === '女') || !content) continue
+    if (!(gender === '男' || gender === '女') || !content)
+      continue
     const last = merged[merged.length - 1]
     if (last && last.gender === gender) {
       // Merge with previous same-speaker segment (remove speaker prefix for following lines)
-      last.text += '\n' + content
-    } else {
+      last.text += `\n${content}`
+    }
+    else {
       merged.push({ text: content, gender, lineIndex: merged.length })
     }
   }
 
-  const ttsQueueUrl = (
-    ctx.env.QSTASH_URL || 'https://qstash.upstash.io'
-  ) + '/v2/publish/' + encodeURIComponent(
-    ctx.env.QSTASH_TTS_URL || `${ctx.env.HACKER_PODCAST_WORKER_URL}/api/tts`
-  )
+  const ttsQueueUrl = `${ctx.env.QSTASH_URL || 'https://qstash.upstash.io'
+  }/v2/publish/${encodeURIComponent(
+    ctx.env.QSTASH_TTS_URL || `${ctx.env.HACKER_PODCAST_WORKER_URL}/api/tts`,
+  )}`
   const ttsQueueToken = ctx.env.QSTASH_TOKEN || ''
 
   for (const { text, gender, lineIndex: index } of merged) {
@@ -208,7 +212,8 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
       let result: { success: boolean, audioUrl?: string }
       try {
         result = JSON.parse(bodyText)
-      } catch {
+      }
+      catch {
         throw new Error(`QStash TTS non-JSON response for segment ${index}: ${response.status} ${bodyText.slice(0, 200)}`)
       }
       if (!result.success) {
@@ -229,29 +234,29 @@ async function processAudio(podcastContent: string, podcastKey: string, step: Wo
   const { audioSize, podcastAudioUrl } = await step.do(stepNames.mergeAudioSegments, retryConfig, async () => {
     if (!ctx.env.BROWSER) {
       console.warn('browser is not configured, skip concat audio files')
-      return { size: 0, url: '' }
+      return { audioSize: 0, podcastAudioUrl: '' }
     }
 
     const audioPageUrl = ctx.env.HACKER_PODCAST_WORKER_DEPLOY_URL || ctx.env.HACKER_PODCAST_WORKER_URL
     const blob = await concatAudioFiles(audioFiles, ctx.env.BROWSER, { workerUrl: audioPageUrl })
 
-    const podcastAudioUrl = 'https://cernet-s3.git4ta.fun/' + podcastKey
+    const podcastAudioUrl = `https://cernet-s3.git4ta.fun/${podcastKey}`
     const uploadResponse = await fetch(podcastAudioUrl, {
       method: 'PUT',
       body: blob,
       headers: { 'Content-Type': 'audio/mpeg' },
     })
     if (!uploadResponse.ok) {
-      throw new Error('Upload to OCA failed: ' + uploadResponse.status)
+      throw new Error(`Upload to OCA failed: ${uploadResponse.status}`)
     }
 
     console.info('podcast audio url', podcastAudioUrl)
-    return { size: blob.size, url: podcastAudioUrl }
+    return { audioSize: blob.size, podcastAudioUrl }
   })
 
   console.info('save podcast to oca success')
 
-  return { audioSize, conversations }
+  return { audioSize, podcastAudioUrl, conversations }
 }
 
 async function saveContent(contentKey: string, podcastKey: string, podcastAudioUrl: string, stories: Story[], contents: GeneratedContents, audioSize: number | undefined, step: WorkflowStep, ctx: WorkflowContext): Promise<void> {
@@ -274,9 +279,8 @@ async function saveContent(contentKey: string, podcastKey: string, podcastAudioU
   console.info('save content to kv success')
 }
 
-async function cleanupTempData(stories: Story[], conversations: string[], podcastKey: string, step: WorkflowStep, ctx: WorkflowContext, event: Params): Promise<void> {
-  // Use a fallback for event.instanceId if not present (though it should be in real workflow)
-  const instanceId = (event as any).instanceId || 'manual';
+async function cleanupTempData(stories: Story[], conversations: string[], podcastKey: string, step: WorkflowStep, ctx: WorkflowContext, event: WorkflowEvent<Params>): Promise<void> {
+  const instanceId = event.instanceId || 'manual'
   await step.do(stepNames.cleanupTemporaryData, retryConfig, async () => {
     const deletePromises = []
 
@@ -298,7 +302,7 @@ async function cleanupTempData(stories: Story[], conversations: string[], podcas
       conversations.map(async (_, index) => {
         try {
           await Promise.any([
-            fetch('https://cernet-s3.git4ta.fun/tmp/' + instanceId + '/' + podcastKey + '-' + index + '.mp3', { method: 'DELETE' }),
+            fetch(`https://cernet-s3.git4ta.fun/tmp/${instanceId}/${podcastKey}-${index}.mp3`, { method: 'DELETE' }),
             new Promise(resolve => setTimeout(resolve, 200)),
           ])
         }
@@ -324,7 +328,7 @@ export class HackerNewsWorkflow extends WorkflowEntrypoint<Env, Params> {
     const contents = await generateContents(allStories, stories, step, ctx)
     const contentKey = `content:${ctx.runEnv}:hacker-podcast:${ctx.today}`
     const podcastKey = `${ctx.today.replaceAll('-', '/')}/${ctx.runEnv}/hacker-podcast-${ctx.today}.mp3`
-    const { audioSize, podcastAudioUrl } = await processAudio(contents.podcastContent, podcastKey, step, ctx, event)
+    const { audioSize, podcastAudioUrl, conversations } = await processAudio(contents.podcastContent, podcastKey, step, ctx, event)
 
     await saveContent(contentKey, podcastKey, podcastAudioUrl, stories, contents, audioSize, step, ctx)
     await cleanupTempData(stories, conversations, podcastKey, step, ctx, event)

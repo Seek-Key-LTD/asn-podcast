@@ -43,7 +43,10 @@ export interface GeneratedContents {
 
 export interface AudioResult {
   audioSize?: number
-  podcastAudioUrl?: string
+  // 必填：D1 的 episodes.audio_url 是 NOT NULL。processAudio 两个分支都返回字符串
+  // （无 BROWSER 时为空串），所以这里不能声明成可选，否则 saveContent 会拿到
+  // string | undefined 并在写库时炸掉。
+  podcastAudioUrl: string
   conversations: string[]
 }
 
