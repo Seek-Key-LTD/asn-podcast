@@ -277,8 +277,8 @@ export interface EpisodeUpsert {
  *   一律 `prepare().bind()`，绝不拼字符串——LLM 生成的正文可能撞 D1 那条
  *     100 KB 的语句上限，而绑定参数的值不计入上限。
  */
-export async function upsertEpisode(db: D1Database, row: EpisodeUpsert): Promise<void> {
-  await db
+export function buildUpsertEpisode(db: D1Database, row: EpisodeUpsert): D1PreparedStatement {
+  return db
     .prepare(`INSERT INTO episodes (
         env, slug, kind, date, legacy_slug, series_id, episode_no,
         season, episode_major, episode_minor,
@@ -325,7 +325,10 @@ export async function upsertEpisode(db: D1Database, row: EpisodeUpsert): Promise
       row.publishedAt,
       row.updatedAt,
     )
-    .run()
+}
+
+export async function upsertEpisode(db: D1Database, row: EpisodeUpsert): Promise<void> {
+  await buildUpsertEpisode(db, row).run()
 }
 
 export async function upsertSeries(db: D1Database, row: {

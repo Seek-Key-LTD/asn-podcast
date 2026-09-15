@@ -29,5 +29,12 @@ declare namespace Cloudflare {
 
     /** 可选的 1×1 追踪像素前缀，仅当配置了才在 RSS 里注入。 */
     NEXT_TRACKING_IMAGE?: string
+
+    /**
+     * 管理端写入接口 `POST /api/admin/episodes` 的 Bearer 令牌。
+     * 生产通过 `wrangler secret put ADMIN_API_TOKEN` 注入；本地用 `.dev.vars`。
+     * 未配置时接口返回 503（fail-closed）。
+     */
+    ADMIN_API_TOKEN?: string
   }
 }
