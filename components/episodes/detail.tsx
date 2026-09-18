@@ -74,6 +74,11 @@ export function EpisodeDetail({ episode, initialPage }: EpisodeDetailProps) {
         />
       )
     },
+    table: ({ children, ...props }) => (
+      <div className="my-6 w-full overflow-x-auto">
+        <table {...props}>{children}</table>
+      </div>
+    ),
   }
 
   return (
