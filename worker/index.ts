@@ -41,21 +41,22 @@ export default {
         }
 
         const audioKey = `tmp/${instanceId}/${podcastKey}-${segmentIndex}.mp3`
-        const audioUrl = 'https://cernet-s3.git4ta.fun/' + audioKey
+        const audioUrl = `https://cernet-s3.git4ta.fun/${audioKey}`
         const uploadResponse = await fetch(audioUrl, {
           method: 'PUT',
           body: audio,
           headers: { 'Content-Type': 'audio/mpeg' },
         })
         if (!uploadResponse.ok) {
-          throw new Error('Upload to OCA failed: ' + uploadResponse.status)
+          throw new Error(`Upload to OCA failed: ${uploadResponse.status}`)
         }
         await env.HACKER_PODCAST_KV.put(`tmp:${instanceId}:audio:${segmentIndex}`, audioUrl, { expirationTtl: 3600 })
 
         return new Response(JSON.stringify({ success: true, audioUrl }), {
           headers: { 'Content-Type': 'application/json' },
         })
-      } catch (error) {
+      }
+      catch (error) {
         console.error('TTS handler failed:', error)
         return new Response(JSON.stringify({ success: false, error: String(error) }), {
           status: 500,
@@ -67,7 +68,7 @@ export default {
     return new Response('ASN Podcast Worker is running. Content is stored in KV/OCA.')
   },
 
-  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
     await env.HACKER_PODCAST_WORKFLOW.create()
   },
 }

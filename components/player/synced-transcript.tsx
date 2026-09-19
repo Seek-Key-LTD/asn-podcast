@@ -30,10 +30,12 @@ export function SyncedTranscript() {
     if (!url || !isOpen)
       return
     const controller = new AbortController()
-    setError(false)
     fetch(url, { signal: controller.signal })
       .then(response => response.ok ? response.text() : Promise.reject(new Error('transcript unavailable')))
-      .then(source => setCues(parseTranscript(source)))
+      .then((source) => {
+        setError(false)
+        setCues(parseTranscript(source))
+      })
       .catch((reason: unknown) => {
         if ((reason as Error).name !== 'AbortError')
           setError(true)

@@ -94,8 +94,8 @@ function createAudioBlob(audio: ArrayBuffer | Uint8Array): Blob {
 }
 
 const omniVoiceGenderMap: Record<string, string> = {
-  '男': 'Male / 男',
-  '女': 'Female / 女',
+  男: 'Male / 男',
+  女: 'Female / 女',
 }
 
 async function omnivoiceTTS(text: string, gender: string, env: Env) {
@@ -222,7 +222,7 @@ async function omniTTS(text: string, gender: string, env: Env) {
       'Auto',
       accentParam,
       'Auto',
-    ]
+    ],
   }
 
   const result = await $fetch<{ data: [ { path: string } ] }>(endpoint, {
@@ -386,7 +386,6 @@ export default function (text: string, gender: string, env: Env) {
   console.info('TTS_PROVIDER', env.TTS_PROVIDER)
   switch (provider) {
     case 'omni':
-    case 'omnivoice':
       return omniTTS(text, gender, env)
     case 'minimax':
       return minimaxTTS(text, gender, env)

@@ -1,18 +1,7 @@
+import type { Env } from './context'
 import puppeteer from '@cloudflare/puppeteer'
 import * as cheerio from 'cheerio'
 import { $fetch } from 'ofetch'
-import type { Env } from './context'
-
-interface ContentSelector {
-  include?: string
-  exclude?: string
-}
-
-interface ContentKeys {
-  JINA_KEY?: string
-  FIRECRAWL_KEY?: string
-  SEARXNG_URL?: string
-}
 
 function xmlBlock(tag: string, content: string): string {
   return `
@@ -31,7 +20,8 @@ export async function searchWithSearXNG(query: string, searxngUrl: string): Prom
     const url = `${searxngUrl}/search?q=${encodeURIComponent(query)}&format=json`
     const response = await $fetch<any>(url)
     return response.results || []
-  } catch (error) {
+  }
+  catch (error) {
     console.error('searxng search failed:', error)
     return []
   }
@@ -45,29 +35,29 @@ export async function getLibraryStories(rssUrl: string): Promise<Story[]> {
   console.info('fetching library stories from rss', rssUrl)
   const xml = await $fetch<string>(rssUrl, { parseResponse: txt => txt })
   const $ = cheerio.load(xml, { xmlMode: true })
-  
+
   const stories: Story[] = []
   $('item').each((_, el) => {
     const title = $(el).find('title').text()
     const link = $(el).find('link').text()
     const description = $(el).find('description').text()
-    
+
     stories.push({
       id: link,
-      title: title,
+      title,
       url: link,
       hackerNewsUrl: link, // 复用此字段作为原始链接
       content: description, // 缓存内容
     })
   })
-  
+
   return stories
 }
 
 export async function getLibraryStory(story: Story): Promise<string> {
   const content = story.content || ''
   const cleanContent = cheerio.load(content).text().trim()
-  
+
   const blocks = [
     story.title ? xmlBlock('title', story.title) : '',
     cleanContent ? xmlBlock('article', cleanContent) : '',
@@ -77,12 +67,12 @@ export async function getLibraryStory(story: Story): Promise<string> {
 }
 
 // 保持兼容性的 Hacker News 函数
-export async function getHackerNewsTopStories(today: string, env: { JINA_KEY?: string }): Promise<Story[]> {
+export async function getHackerNewsTopStories(_today: string, _env: { JINA_KEY?: string }): Promise<Story[]> {
   const rssUrl = 'https://github.seekkey.tech/index.xml'
   return getLibraryStories(rssUrl)
 }
 
-export async function getHackerNewsStory(story: Story, maxTokens: number, env: { JINA_KEY?: string }): Promise<string> {
+export async function getHackerNewsStory(story: Story, _maxTokens: number, _env: { JINA_KEY?: string }): Promise<string> {
   return getLibraryStory(story)
 }
 
@@ -97,13 +87,15 @@ export async function queryRAG(query: string, env: Env): Promise<string> {
     })
 
     const results = matches.matches || []
-    if (!results.length) return ''
+    if (!results.length)
+      return ''
 
     return results
       .filter(m => m.metadata?.text)
       .map((m, i) => `[知识库参考 ${i + 1}] (相关度: ${m.score.toFixed(2)})\n${m.metadata!.text as string}`)
       .join('\n\n---\n\n')
-  } catch (error) {
+  }
+  catch (error) {
     console.error('RAG query failed:', error)
     return ''
   }
