@@ -20,11 +20,27 @@ export function SyncedTranscript() {
   const isOpen = useStore(playerStore, state => state.isTranscriptOpen)
   const [cues, setCues] = useState<TranscriptCue[]>([])
   const [error, setError] = useState(false)
+  const [offsetMs, setOffsetMs] = useState(0)
   const scrollLockUntil = useRef(0)
   const lineRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
   const url = useMemo(() => episode ? transcriptUrl(episode.audio.src) : null, [episode])
-  const activeCue = cues.find(cue => currentTime * 1000 >= cue.timeMs && currentTime * 1000 < cue.endTimeMs)
+  const effectiveTimeMs = currentTime * 1000 + offsetMs
+  const activeCue = cues.find(cue => effectiveTimeMs >= cue.timeMs && effectiveTimeMs < cue.endTimeMs)
+
+  useEffect(() => {
+    if (!episode)
+      return
+    const saved = window.localStorage.getItem(`asn-transcript-offset:${episode.id}`)
+    const parsed = saved === null ? 0 : Number(saved)
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+    setOffsetMs(Number.isFinite(parsed) ? parsed : 0)
+  }, [episode])
+
+  useEffect(() => {
+    if (episode)
+      window.localStorage.setItem(`asn-transcript-offset:${episode.id}`, String(offsetMs))
+  }, [episode, offsetMs])
 
   useEffect(() => {
     if (!url || !isOpen)
@@ -53,6 +69,9 @@ export function SyncedTranscript() {
   if (!isOpen)
     return null
 
+  const offsetSeconds = offsetMs / 1000
+  const offsetLabel = `${offsetSeconds > 0 ? '+' : ''}${offsetSeconds.toFixed(1)}s`
+
   return (
     <section className={`
       fixed inset-x-0 bottom-28 z-40 mx-auto w-[min(42rem,calc(100vw-2rem))]
@@ -60,7 +79,51 @@ export function SyncedTranscript() {
       backdrop-blur-md
     `}
     >
-      <div className="border-b px-4 py-2 text-xs text-muted-foreground">{episode?.title ?? '逐字稿'}</div>
+      <div className="border-b px-4 py-2">
+        <div className="text-xs text-muted-foreground">{episode?.title ?? '逐字稿'}</div>
+        <div className={`
+          mt-2 flex items-center gap-2 text-xs text-muted-foreground
+        `}
+        >
+          <span className="shrink-0">时间校准</span>
+          <input
+            aria-label="逐字稿时间校准"
+            className="min-w-0 flex-1 accent-foreground"
+            type="range"
+            min={-10000}
+            max={10000}
+            step={100}
+            value={offsetMs}
+            onChange={event => setOffsetMs(Number(event.target.value))}
+          />
+          <output className="w-12 text-right tabular-nums">{offsetLabel}</output>
+          <button
+            type="button"
+            className={`
+              shrink-0 rounded px-1.5 py-0.5
+              hover:bg-white/10
+            `}
+            onClick={() => {
+              if (activeCue)
+                setOffsetMs(activeCue.timeMs - currentTime * 1000)
+            }}
+            title="将当前句对齐到播放位置"
+          >
+            对齐当前句
+          </button>
+          <button
+            type="button"
+            className={`
+              shrink-0 rounded px-1.5 py-0.5
+              hover:bg-white/10
+            `}
+            onClick={() => setOffsetMs(0)}
+            title="恢复默认偏移"
+          >
+            重置
+          </button>
+        </div>
+      </div>
       <div
         className="max-h-72 overflow-y-auto px-4 py-5"
         onScroll={() => { scrollLockUntil.current = Date.now() + 3000 }}
@@ -79,7 +142,7 @@ export function SyncedTranscript() {
               type="button"
               onClick={() => {
                 if (player)
-                  player.currentTime = cue.timeMs / 1000
+                  player.currentTime = Math.max(0, (cue.timeMs - offsetMs) / 1000)
               }}
               className={cn(
                 `
