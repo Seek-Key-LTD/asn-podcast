@@ -30,7 +30,8 @@ export function SyncedTranscript() {
     if (!url || !isOpen)
       return
     const controller = new AbortController()
-    fetch(url, { signal: controller.signal })
+    const proxyUrl = `/api/transcript?url=${encodeURIComponent(url)}`
+    fetch(proxyUrl, { signal: controller.signal })
       .then(response => response.ok ? response.text() : Promise.reject(new Error('transcript unavailable')))
       .then((source) => {
         setError(false)
