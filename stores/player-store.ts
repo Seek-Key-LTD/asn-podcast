@@ -6,6 +6,7 @@ export interface PlayerStoreState {
   isPlaying: boolean
   isSourceChanging: boolean
   selectionSource: 'default' | 'user' | null
+  isTranscriptOpen: boolean
 }
 
 let playerStore: Store<PlayerStoreState> | null = null
@@ -16,7 +17,18 @@ function createPlayerStore(): Store<PlayerStoreState> {
     isPlaying: false,
     isSourceChanging: false,
     selectionSource: null,
+    isTranscriptOpen: false,
   })
+}
+
+export function toggleTranscript(): void {
+  const store = getPlayerStore()
+  store.setState(state => ({ ...state, isTranscriptOpen: !state.isTranscriptOpen }))
+}
+
+export function setTranscriptOpen(isTranscriptOpen: boolean): void {
+  const store = getPlayerStore()
+  store.setState(state => ({ ...state, isTranscriptOpen }))
 }
 
 export function initPlayerStore(): Store<PlayerStoreState> {
@@ -36,6 +48,7 @@ export function getPlayerStore(): Store<PlayerStoreState> {
 export function setCurrentEpisode(episode: Episode): void {
   const store = getPlayerStore()
   store.setState(state => ({
+    ...state,
     currentEpisode: episode,
     isPlaying: true,
     isSourceChanging: state.currentEpisode?.id !== episode.id,
@@ -68,6 +81,7 @@ export function clearPlayerEpisode(): void {
     isPlaying: false,
     isSourceChanging: false,
     selectionSource: null,
+    isTranscriptOpen: false,
   }))
 }
 

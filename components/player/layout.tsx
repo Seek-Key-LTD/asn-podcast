@@ -10,11 +10,12 @@ import { CurrentTime, Duration } from '@/components/player/time-info'
 import { TimeSliders } from '@/components/player/time-sliders'
 import { Mute, Volume } from '@/components/player/volume'
 import { cn } from '@/lib/utils'
-import { getPlayerStore } from '@/stores/player-store'
+import { getPlayerStore, toggleTranscript } from '@/stores/player-store'
 
 export function PlayerLayout() {
   const playerStore = getPlayerStore()
   const currentEpisode = useStore(playerStore, state => state.currentEpisode)
+  const isTranscriptOpen = useStore(playerStore, state => state.isTranscriptOpen)
 
   return (
     <Controls.Root
@@ -75,6 +76,19 @@ export function PlayerLayout() {
         >
           <div className="flex items-center gap-4">
             <Speed />
+            <button
+              type="button"
+              onClick={toggleTranscript}
+              className={cn(`
+                rounded-md px-2 py-1 text-xs transition-colors
+                hover:bg-white/10
+              `, isTranscriptOpen
+                ? `text-foreground`
+                : `text-muted-foreground`)}
+              aria-pressed={isTranscriptOpen}
+            >
+              逐字稿 / 词
+            </button>
             <div className="flex items-center">
               <Mute />
               <Volume />

@@ -9,6 +9,7 @@ import {
 } from '@vidstack/react'
 import { useEffect } from 'react'
 import { PlayerLayout } from '@/components/player/layout'
+import { SyncedTranscript } from '@/components/player/synced-transcript'
 import { useEpisodeFullscreen } from '@/hooks/use-episode-fullscreen'
 import { cn } from '@/lib/utils'
 import { getPlayerStore, pause, play, setIsPlaying, setIsSourceChanging } from '@/stores/player-store'
@@ -132,6 +133,7 @@ export function Player() {
       >
         <MediaProvider />
         <PlayerContent />
+        <SyncedTranscript />
         <PlayerLayout />
       </MediaPlayer>
     </div>
